@@ -1,0 +1,16 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#canvas1 {
+    border:5px solid black;
+    position: absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#4d79bc;
+    /* 設置寬最大100%，就算畫面縮小也會是滿版 */
+    max-width: 100%;
+}
