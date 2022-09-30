@@ -30,7 +30,7 @@ window.addEventListener('load', function () {
             this.height = 190;
             this.location.x = 20;
             this.location.y = 100;
-            this.speed.y = 1;
+            this.speed.y = -1;
             this.speed.x = 0;
         }
         Player.prototype.update = function () {

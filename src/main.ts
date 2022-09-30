@@ -11,7 +11,7 @@ interface Speed {
 window.addEventListener('load',function(){
     //canvas setup 
     const canvas = this.document.getElementById('canvas1') as HTMLCanvasElement
-    const ctx = canvas.getContext('2d');  //Drawing Context(built in object that allow us to deal with canvas)
+    const ctx = canvas.getContext('2d')!;  //Drawing Context(built in object that allow us to deal with canvas)
     canvas.width = 1500
     canvas.height = 500
     
@@ -30,7 +30,7 @@ window.addEventListener('load',function(){
             this.height = 190
             this.location.x = 20
             this.location.y = 100
-            this.speed.y = 1
+            this.speed.y = -1
             this.speed.x = 0
         }
         update(){
@@ -50,14 +50,14 @@ window.addEventListener('load',function(){
     }
     class Game {
         private player:Player
-        constructor(private width, private height){
+        constructor(private width:number, private height:number){
             this.player = new Player(this)
             console.log(this.player)
         }
         update(){
             this.player.update()
         }
-        draw(context){
+        draw(context:CanvasRenderingContext2D){
             this.player.draw(context)
         }
     }
