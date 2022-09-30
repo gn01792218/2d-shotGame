@@ -1,4 +1,8 @@
 //interface
+interface Size {
+    width:number,
+    height:number
+}
 interface Coordinate {
     x:number,
     y:number
@@ -11,7 +15,8 @@ enum MoveCommand {
     UP = 'ArrowUp',
     DOWN = 'ArrowDown',
     LEFT = 'ArrowLeft',
-    RIGHT = 'ArrowRight'
+    RIGHT = 'ArrowRight',
+    FIRE = ' '
 }
 //load事件時，畫出畫布
 window.addEventListener('load',function(){
@@ -30,9 +35,9 @@ window.addEventListener('load',function(){
                     case MoveCommand.DOWN:
                     case MoveCommand.LEFT:
                     case MoveCommand.RIGHT:
+                    case MoveCommand.FIRE:
                         this.game.keyBoardCommands.push(e.key)
                         console.log(this.game.keyBoardCommands)
-                    break
                 }
             })
             window.addEventListener('keyup',(e)=>{
@@ -41,24 +46,36 @@ window.addEventListener('load',function(){
                     case MoveCommand.DOWN:
                     case MoveCommand.LEFT:
                     case MoveCommand.RIGHT:
+                    case MoveCommand.FIRE:
                         this.game.keyBoardCommands.splice(this.game.keyBoardCommands.indexOf(e.key),1)
-                    break
                 }
             })
         }
     }
-    class Projectile {}
+    class Projectile {
+        private speed:Speed = {x:10,y:10}
+        private deleted:Boolean
+        constructor(private game:Game,private position:Coordinate,private size:Size){
+            this.deleted = false
+        }
+        updated(){
+            if(this.position.x > this.game.gameSize.width) {
+                this.position.x += this.speed.x
+            }
+        }
+        draw(context:CanvasRenderingContext2D){
+            context.fillStyle = 'yellow'
+            context.fillRect(this.position.x,this.position.y,this.size.width,this.size.height)
+        }
+    }
     class Particle {}
     class Player {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
-        private width:number
-        private height:number
+        private size:Size = {width:120,height:150}
         private location:Coordinate = {x:0,y:0}
         private speed:Speed = {x:5,y:5}
         constructor(private game:Game) {
             this.game = game
-            this.width = 120
-            this.height = 190
             this.location.x = 20
             this.location.y = 100
         }
@@ -77,7 +94,11 @@ window.addEventListener('load',function(){
             }
         }
         draw(context:CanvasRenderingContext2D){
-            context.fillRect(this.location.x,this.location.y,this.width,this.height)
+            context.fillStyle = '#123456'
+            context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+        }
+        fire(){
+            //按一下空白鍵就發射一顆
         }
     }
     class Enemy {}
@@ -91,14 +112,22 @@ window.addEventListener('load',function(){
     class Game {
         private player:Player
         private inputHandler:InputHandler
-        private keys:string[]
-        constructor(private width:number, private height:number){
+        private commandKeys:string[]
+        private ammos:number
+        constructor(private size:Size){
             this.player = new Player(this)
             this.inputHandler = new InputHandler(this)
-            this.keys = []
+            this.commandKeys = []
+            this.ammos = 20
         }
         get keyBoardCommands (){
-            return this.keys
+            return this.commandKeys
+        }
+        get totalAmmos (){
+            return this.ammos
+        }
+        get gameSize () {
+            return this.size
         }
         update(){
             this.player.update()
@@ -107,7 +136,7 @@ window.addEventListener('load',function(){
             this.player.draw(context)
         }
     }
-    const mainGame = new Game(canvas.width,canvas.height)
+    const mainGame = new Game({width:canvas.width,height:canvas.height})
     function animate() {
         ctx?.clearRect(0,0,canvas.width,canvas.height)
         mainGame.update()
