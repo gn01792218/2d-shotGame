@@ -7,6 +7,12 @@ interface Speed {
     x:number,
     y:number
 }
+enum MoveCommand {
+    UP = 'ArrowUp',
+    DOWN = 'ArrowDown',
+    LEFT = 'ArrowLeft',
+    RIGHT = 'ArrowRight'
+}
 //load事件時，畫出畫布
 window.addEventListener('load',function(){
     //canvas setup 
@@ -15,7 +21,32 @@ window.addEventListener('load',function(){
     canvas.width = 1500
     canvas.height = 500
     
-    class InputHandler {}
+    class InputHandler {
+        constructor(private game:Game){
+            window.addEventListener('keydown',(e)=>{
+                if(this.game.keyBoardCommands.indexOf(e.key) !== -1) return  //避免長按時，一直增加
+                switch(e.key) {
+                    case MoveCommand.UP:
+                    case MoveCommand.DOWN:
+                    case MoveCommand.LEFT:
+                    case MoveCommand.RIGHT:
+                        this.game.keyBoardCommands.push(e.key)
+                        console.log(this.game.keyBoardCommands)
+                    break
+                }
+            })
+            window.addEventListener('keyup',(e)=>{
+                switch(e.key) {
+                    case MoveCommand.UP:
+                    case MoveCommand.DOWN:
+                    case MoveCommand.LEFT:
+                    case MoveCommand.RIGHT:
+                        this.game.keyBoardCommands.splice(this.game.keyBoardCommands.indexOf(e.key),1)
+                    break
+                }
+            })
+        }
+    }
     class Projectile {}
     class Particle {}
     class Player {
@@ -23,18 +54,27 @@ window.addEventListener('load',function(){
         private width:number
         private height:number
         private location:Coordinate = {x:0,y:0}
-        private speed:Speed = {x:0,y:0}
+        private speed:Speed = {x:5,y:5}
         constructor(private game:Game) {
             this.game = game
             this.width = 120
             this.height = 190
             this.location.x = 20
             this.location.y = 100
-            this.speed.y = -1
-            this.speed.x = 0
         }
         update(){
-            this.location.y += this.speed.y
+            if(this.game.keyBoardCommands.indexOf(MoveCommand.DOWN)){
+                this.location.y -= this.speed.y
+            }
+            if(this.game.keyBoardCommands.indexOf(MoveCommand.UP)){
+                this.location.y += this.speed.y
+            }
+            if(this.game.keyBoardCommands.indexOf(MoveCommand.LEFT)){
+                this.location.x += this.speed.x
+            }
+            if(this.game.keyBoardCommands.indexOf(MoveCommand.RIGHT)){
+                this.location.x -= this.speed.x
+            }
         }
         draw(context:CanvasRenderingContext2D){
             context.fillRect(this.location.x,this.location.y,this.width,this.height)
@@ -50,9 +90,15 @@ window.addEventListener('load',function(){
     }
     class Game {
         private player:Player
+        private inputHandler:InputHandler
+        private keys:string[]
         constructor(private width:number, private height:number){
             this.player = new Player(this)
-            console.log(this.player)
+            this.inputHandler = new InputHandler(this)
+            this.keys = []
+        }
+        get keyBoardCommands (){
+            return this.keys
         }
         update(){
             this.player.update()
