@@ -1,12 +1,13 @@
-var MoveCommand;
-(function (MoveCommand) {
-    MoveCommand["UP"] = "ArrowUp";
-    MoveCommand["DOWN"] = "ArrowDown";
-    MoveCommand["LEFT"] = "ArrowLeft";
-    MoveCommand["RIGHT"] = "ArrowRight";
-    MoveCommand["FIRE"] = " ";
-})(MoveCommand || (MoveCommand = {}));
-//load事件時，畫出畫布
+var KeyBoardCommands;
+(function (KeyBoardCommands) {
+    KeyBoardCommands["UP"] = "ArrowUp";
+    KeyBoardCommands["DOWN"] = "ArrowDown";
+    KeyBoardCommands["LEFT"] = "ArrowLeft";
+    KeyBoardCommands["RIGHT"] = "ArrowRight";
+    KeyBoardCommands["FIRE"] = " ";
+    KeyBoardCommands["RELOAD"] = "r";
+})(KeyBoardCommands || (KeyBoardCommands = {}));
+//load事件時，渲染出遊戲場景
 window.addEventListener('load', function () {
     //canvas setup 
     const canvas = this.document.getElementById('canvas1');
@@ -20,22 +21,26 @@ window.addEventListener('load', function () {
                 if (this.game.keyBoardCommands.indexOf(e.key) !== -1)
                     return; //避免長按時，一直增加
                 switch (e.key) {
-                    case MoveCommand.UP:
-                    case MoveCommand.DOWN:
-                    case MoveCommand.LEFT:
-                    case MoveCommand.RIGHT:
-                    case MoveCommand.FIRE:
+                    case KeyBoardCommands.UP:
+                    case KeyBoardCommands.DOWN:
+                    case KeyBoardCommands.LEFT:
+                    case KeyBoardCommands.RIGHT:
                         this.game.keyBoardCommands.push(e.key);
                         console.log(this.game.keyBoardCommands);
+                        break;
+                    case KeyBoardCommands.FIRE: //接收到空白鍵時，叫玩家發射
+                        this.game.getPlayer.fire();
+                        break;
+                    case KeyBoardCommands.RELOAD:
+                        this.game.getPlayer.reloadAmmo();
                 }
             });
             window.addEventListener('keyup', (e) => {
                 switch (e.key) {
-                    case MoveCommand.UP:
-                    case MoveCommand.DOWN:
-                    case MoveCommand.LEFT:
-                    case MoveCommand.RIGHT:
-                    case MoveCommand.FIRE:
+                    case KeyBoardCommands.UP:
+                    case KeyBoardCommands.DOWN:
+                    case KeyBoardCommands.LEFT:
+                    case KeyBoardCommands.RIGHT:
                         this.game.keyBoardCommands.splice(this.game.keyBoardCommands.indexOf(e.key), 1);
                 }
             });
@@ -49,14 +54,19 @@ window.addEventListener('load', function () {
             this.speed = { x: 10, y: 10 };
             this.deleted = false;
         }
+        get disappear() {
+            return this.deleted;
+        }
         updated() {
-            if (this.position.x > this.game.gameSize.width) {
-                this.position.x += this.speed.x;
-            }
+            if (this.position.x > this.game.gameSize.width * 0.8)
+                this.deleted = true;
+            this.position.x += this.speed.x;
         }
         draw(context) {
-            context.fillStyle = 'yellow';
-            context.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+            if (!this.deleted) {
+                context.fillStyle = 'yellow';
+                context.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+            }
         }
     }
     class Particle {
@@ -68,30 +78,53 @@ window.addEventListener('load', function () {
             this.size = { width: 120, height: 150 };
             this.location = { x: 0, y: 0 };
             this.speed = { x: 5, y: 5 };
+            this.ammos = [];
+            this.remainingBullets = 5;
             this.game = game;
             this.location.x = 20;
             this.location.y = 100;
         }
         update() {
-            if (this.game.keyBoardCommands.indexOf(MoveCommand.DOWN)) {
+            if (this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)) {
                 this.location.y -= this.speed.y;
             }
-            if (this.game.keyBoardCommands.indexOf(MoveCommand.UP)) {
+            if (this.game.keyBoardCommands.includes(KeyBoardCommands.UP)) {
                 this.location.y += this.speed.y;
             }
-            if (this.game.keyBoardCommands.indexOf(MoveCommand.LEFT)) {
+            if (this.game.keyBoardCommands.includes(KeyBoardCommands.LEFT)) {
                 this.location.x += this.speed.x;
             }
-            if (this.game.keyBoardCommands.indexOf(MoveCommand.RIGHT)) {
+            if (this.game.keyBoardCommands.includes(KeyBoardCommands.RIGHT)) {
                 this.location.x -= this.speed.x;
             }
+            //有子彈的話就要更新
+            if (this.ammos.length < 1)
+                return;
+            this.ammos.forEach(ammo => {
+                ammo.updated();
+            });
+            //更新子彈陣列(把尚未delete的子彈filter出來)
+            this.ammos = this.ammos.filter(ammo => !ammo.disappear);
         }
         draw(context) {
+            //1.畫自己
             context.fillStyle = '#123456';
             context.fillRect(this.location.x, this.location.y, this.size.width, this.size.height);
+            //2.畫子彈
+            this.ammos.forEach(ammo => {
+                ammo.draw(context);
+            });
         }
         fire() {
+            if (this.remainingBullets === 0)
+                return;
             //按一下空白鍵就發射一顆
+            this.ammos.push(new Projectile(this.game, { x: this.location.x, y: this.location.y }, { width: 10, height: 10 }));
+            this.remainingBullets--;
+            console.log('發射', this.ammos);
+        }
+        reloadAmmo() {
+            this.remainingBullets += (5 - this.remainingBullets);
         }
     }
     class Enemy {
@@ -108,13 +141,12 @@ window.addEventListener('load', function () {
             this.player = new Player(this);
             this.inputHandler = new InputHandler(this);
             this.commandKeys = [];
-            this.ammos = 20;
+        }
+        get getPlayer() {
+            return this.player;
         }
         get keyBoardCommands() {
             return this.commandKeys;
-        }
-        get totalAmmos() {
-            return this.ammos;
         }
         get gameSize() {
             return this.size;
