@@ -11,6 +11,12 @@ interface Speed {
     x:number,
     y:number
 }
+interface Rectangle {
+    left:number,
+    right:number,
+    top:number,
+    bottom:number
+}
 enum KeyBoardCommands {
     UP = 'ArrowUp',
     DOWN = 'ArrowDown',
@@ -57,33 +63,22 @@ window.addEventListener('load',function(){
             })
         }
     }
-    class Projectile {
-        private speed:Speed = {x:5,y:5}
-        private deleted:Boolean
-        constructor(private game:Game,private position:Coordinate,private size:Size){
-            this.deleted = false
-        }
-        get disappear () {
-            return this.deleted
-        }
-        updated(){
-            this.position.x += this.speed.x
-            if(this.position.x > this.game.gameSize.width * 0.8) this.deleted = true
-        }
-        draw(context:CanvasRenderingContext2D){
-            if(!this.deleted) {
-                context.fillStyle = 'yellow'
-                context.fillRect(this.position.x,this.position.y,this.size.width,this.size.height)
-            }
-        }
-    }
     class Particle {}
-    abstract class GameRole {
+    abstract class GameObj {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
         protected size:Size = {width:120,height:150}
         protected location:Coordinate = {x:0,y:0}
         protected speed:Speed = {x:5,y:5}
         protected deleted:Boolean
+        protected rect:Rectangle = {
+            left:this.location.x,
+            right:this.location.x + this.size.width,
+            top:this.location.y,
+            bottom:this.location.y + this.size.height
+        }
+        get roleRect () {
+            return this.rect
+        }
         get disappear () {
             return this.deleted
         }
@@ -93,7 +88,27 @@ window.addEventListener('load',function(){
         abstract update(deltaTime?:number):void
         abstract draw(context:CanvasRenderingContext2D):void
     }
-    class Player extends GameRole{
+    class Projectile extends GameObj{
+        constructor(game:Game,location:Coordinate){
+            super(game)
+            this.size = { width:10, height:10}
+            this.location = location
+        }
+        get disappear () {
+            return this.deleted
+        }
+        update(){
+            this.location.x += this.speed.x
+            if(this.location.x > this.game.gameSize.width * 0.8) this.deleted = true
+        }
+        draw(context:CanvasRenderingContext2D){
+            if(!this.deleted) {
+                context.fillStyle = 'yellow'
+                context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+            }
+        }
+    }
+    class Player extends GameObj{
         private ammos:Projectile[] = []
         private maxAmmo = 20  //最大彈藥數
         private remainingBullets = 10  //玩家剩餘子彈
@@ -129,7 +144,7 @@ window.addEventListener('load',function(){
             //有子彈的話就要更新
             if(this.ammos.length<1) return
             this.ammos.forEach(ammo=>{
-                ammo.updated()
+                ammo.update()
             })
             //更新子彈陣列(把尚未delete的子彈filter出來，即移除被標示為delete的子彈)
             this.ammos = this.ammos.filter(ammo=>!ammo.disappear)
@@ -147,7 +162,7 @@ window.addEventListener('load',function(){
         fire(){
             if(this.remainingBullets === 0) return
             //按一下空白鍵就發射一顆
-            this.ammos.push(new Projectile(this.game,{x:this.location.x,y:this.location.y},{width:10,height:10})) 
+            this.ammos.push(new Projectile(this.game,{x:this.location.x,y:this.location.y})) 
             this.remainingBullets --
         }
         reloadAmmo() {
@@ -162,7 +177,7 @@ window.addEventListener('load',function(){
             this.autoLoadTimer += deltaTime
         }
     }
-    abstract class Enemy extends GameRole {
+    abstract class Enemy extends GameObj {
         constructor(game:Game){
             super(game)
         }
@@ -248,6 +263,14 @@ window.addEventListener('load',function(){
                 this.angularBornTimer = 0
             }
             this.angularBornTimer += deltaTime
+        }
+        checkCollision(rect1:Rectangle,rect2:Rectangle){
+            return (
+                rect1.right > rect2.left &&
+                rect1.left < rect2.right &&
+                rect1.top > rect2.bottom &&
+                rect1.bottom < rect2.top
+            )
         }
     }
     const mainGame = new Game({width:canvas.width,height:canvas.height})

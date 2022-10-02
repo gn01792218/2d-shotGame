@@ -46,45 +46,52 @@ window.addEventListener('load', function () {
             });
         }
     }
-    class Projectile {
-        constructor(game, position, size) {
-            this.game = game;
-            this.position = position;
-            this.size = size;
-            this.speed = { x: 5, y: 5 };
-            this.deleted = false;
-        }
-        get disappear() {
-            return this.deleted;
-        }
-        updated() {
-            this.position.x += this.speed.x;
-            if (this.position.x > this.game.gameSize.width * 0.8)
-                this.deleted = true;
-        }
-        draw(context) {
-            if (!this.deleted) {
-                context.fillStyle = 'yellow';
-                context.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
-            }
-        }
-    }
     class Particle {
     }
-    class GameRole {
+    class GameObj {
         constructor(game) {
             this.game = game;
             //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
             this.size = { width: 120, height: 150 };
             this.location = { x: 0, y: 0 };
             this.speed = { x: 5, y: 5 };
+            this.rect = {
+                left: this.location.x,
+                right: this.location.x + this.size.width,
+                top: this.location.y,
+                bottom: this.location.y + this.size.height
+            };
             this.deleted = false;
+        }
+        get roleRect() {
+            return this.rect;
         }
         get disappear() {
             return this.deleted;
         }
     }
-    class Player extends GameRole {
+    class Projectile extends GameObj {
+        constructor(game, location) {
+            super(game);
+            this.size = { width: 10, height: 10 };
+            this.location = location;
+        }
+        get disappear() {
+            return this.deleted;
+        }
+        update() {
+            this.location.x += this.speed.x;
+            if (this.location.x > this.game.gameSize.width * 0.8)
+                this.deleted = true;
+        }
+        draw(context) {
+            if (!this.deleted) {
+                context.fillStyle = 'yellow';
+                context.fillRect(this.location.x, this.location.y, this.size.width, this.size.height);
+            }
+        }
+    }
+    class Player extends GameObj {
         constructor(game) {
             super(game);
             this.ammos = [];
@@ -121,7 +128,7 @@ window.addEventListener('load', function () {
             if (this.ammos.length < 1)
                 return;
             this.ammos.forEach(ammo => {
-                ammo.updated();
+                ammo.update();
             });
             //更新子彈陣列(把尚未delete的子彈filter出來，即移除被標示為delete的子彈)
             this.ammos = this.ammos.filter(ammo => !ammo.disappear);
@@ -139,7 +146,7 @@ window.addEventListener('load', function () {
             if (this.remainingBullets === 0)
                 return;
             //按一下空白鍵就發射一顆
-            this.ammos.push(new Projectile(this.game, { x: this.location.x, y: this.location.y }, { width: 10, height: 10 }));
+            this.ammos.push(new Projectile(this.game, { x: this.location.x, y: this.location.y }));
             this.remainingBullets--;
         }
         reloadAmmo() {
@@ -155,7 +162,7 @@ window.addEventListener('load', function () {
             this.autoLoadTimer += deltaTime;
         }
     }
-    class Enemy extends GameRole {
+    class Enemy extends GameObj {
         constructor(game) {
             super(game);
         }
@@ -237,6 +244,12 @@ window.addEventListener('load', function () {
                 this.angularBornTimer = 0;
             }
             this.angularBornTimer += deltaTime;
+        }
+        checkCollision(rect1, rect2) {
+            return (rect1.right > rect2.left &&
+                rect1.left < rect2.right &&
+                rect1.top > rect2.bottom &&
+                rect1.bottom < rect2.top);
         }
     }
     const mainGame = new Game({ width: canvas.width, height: canvas.height });
