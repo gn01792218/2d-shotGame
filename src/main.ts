@@ -253,11 +253,18 @@ window.addEventListener('load',function(){
         }
         draw(context: CanvasRenderingContext2D): void {
             if(!this.deleted) {
+                context.save()
                 context.fillStyle = 'green'
+                context.shadowColor = 'black'
+                context.shadowBlur = 10
+                context.shadowOffsetX = 10
+                context.shadowOffsetY = 5
                 context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+                context.restore()
                 context.fillStyle = 'black'
-                context.font = '10px'
+                context.font = 'bold 16px serif'
                 context.fillText(this.hp.toString(),this.location.x,this.location.y)
+                context.restore()
             }
         }
     }
@@ -272,6 +279,8 @@ window.addEventListener('load',function(){
             //顯示玩家得分
             context.fillStyle = 'yellow'
             context.font = 'bold 20px serif'
+            context.shadowColor = 'black'
+            context.shadowBlur = 10
             context.shadowOffsetX = 2
             context.shadowOffsetY = 2
             context.fillText(`Score:${this.game.getPlayer.playerScore}`,20,60)
