@@ -204,7 +204,6 @@ window.addEventListener('load', function () {
     class Enemy extends GameObj {
         constructor(game) {
             super(game);
-            this.killScroe = 5;
         }
         get gainScore() {
             return this.killScroe;
@@ -224,6 +223,7 @@ window.addEventListener('load', function () {
     class Angular extends Enemy {
         constructor(game) {
             super(game);
+            this.killScroe = 5;
             this.hp = 3;
             this.atk = 10;
             this.size = { width: 50, height: 50 };
@@ -235,7 +235,7 @@ window.addEventListener('load', function () {
                 context.fillStyle = 'green';
                 context.fillRect(this.location.x, this.location.y, this.size.width, this.size.height);
                 context.fillStyle = 'black';
-                context.font = '20px';
+                context.font = '10px';
                 context.fillText(this.hp.toString(), this.location.x, this.location.y);
             }
         }
@@ -249,6 +249,13 @@ window.addEventListener('load', function () {
             this.game = game;
         }
         draw(context) {
+            context.save();
+            //顯示玩家得分
+            context.fillStyle = 'yellow';
+            context.font = 'bold 20px serif';
+            context.shadowOffsetX = 2;
+            context.shadowOffsetY = 2;
+            context.fillText(`Score:${this.game.getPlayer.playerScore}`, 20, 60);
             //畫子彈最大數量
             for (let i = 0; i < this.game.getPlayer.getMaxAmmoNum; i++) {
                 context.fillStyle = 'gray';
@@ -259,6 +266,7 @@ window.addEventListener('load', function () {
                 context.fillStyle = 'red';
                 context.fillRect(20 + i * 6, 20, 5, 20);
             }
+            context.restore();
         }
     }
     class Game {
@@ -271,6 +279,7 @@ window.addEventListener('load', function () {
             this.angularEnemys = [];
             this.angularBornTimer = 0;
             this.angularBornInterval = 1000;
+            this.winScore = 20;
         }
         get getPlayer() {
             return this.player;
@@ -310,6 +319,8 @@ window.addEventListener('load', function () {
             this.angularEnemys.forEach(angular => angular.draw(context));
         }
         autoGenrateAngular(deltaTime) {
+            if (this.player.playerScore >= this.winScore)
+                return;
             if (this.angularBornTimer > this.angularBornInterval) {
                 this.angularEnemys.push(new Angular(this));
                 this.angularBornTimer = 0;
