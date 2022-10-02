@@ -76,30 +76,57 @@ window.addEventListener('load',function(){
             top:this.location.y,
             bottom:this.location.y + this.size.height
         }
-        get roleRect () {
+        abstract hp:number
+        abstract atk:number
+        get HP () {
+            return this.hp
+        }
+        get ATK () {
+            return this.atk
+        }
+        get objRect () {
             return this.rect
         }
         get disappear () {
             return this.deleted
+        }
+        set disappear (value:Boolean) {
+            this.deleted = value
         }
         constructor(protected game:Game){
             this.deleted = false
         }
         abstract update(deltaTime?:number):void
         abstract draw(context:CanvasRenderingContext2D):void
+        checkCollisionWith(targect:Rectangle){
+            return (
+                this.rect.left < targect.right &&
+                this.rect.right > targect.left &&
+                this.rect.top < targect.bottom &&
+                this.rect.bottom > targect.top
+            )
+        }
+        tweakHp(payload:number){
+            this.hp += payload
+        }
     }
-    class Projectile extends GameObj{
+    class Projectile extends GameObj {
+        hp = 1
+        atk = -1
         constructor(game:Game,location:Coordinate){
             super(game)
             this.size = { width:10, height:10}
             this.location = location
         }
-        get disappear () {
-            return this.deleted
-        }
         update(){
             this.location.x += this.speed.x
-            if(this.location.x > this.game.gameSize.width * 0.8) this.deleted = true
+            this.rect = {
+                left:this.location.x,
+                right:this.location.x + this.size.width,
+                top:this.location.y,
+                bottom:this.location.y + this.size.height
+            }
+            if(this.location.x > this.game.gameSize.width * 0.8 || this.hp <=0 ) this.deleted = true
         }
         draw(context:CanvasRenderingContext2D){
             if(!this.deleted) {
@@ -109,25 +136,40 @@ window.addEventListener('load',function(){
         }
     }
     class Player extends GameObj{
+        hp = 100
+        atk = 0
         private ammos:Projectile[] = []
         private maxAmmo = 20  //最大彈藥數
         private remainingBullets = 10  //玩家剩餘子彈
         private autoLoadTimer = 0
         private autoLoadAmmos = 1 //自動填充的子彈數量
         private autoLoadInterval = 5000 //自動填充的間格
+        private score = 0
         constructor(game:Game) {
             super(game)
             this.size = {width:120,height:150}
             this.location = {x:20,y:100}
             this.speed = {x:5,y:5}
         }
-        get getMaxAmmo () {
+        get playerAmmoArr () {
+            return this.ammos
+        }
+        get getMaxAmmoNum () {
             return this.maxAmmo
         }
-        get playerAmmos () {
+        get playerAmmoNum () {
             return this.remainingBullets
         }
+        get playerScore () {
+            return this.score
+        }
         update(deltaTime:number){
+            this.rect = {
+                left:this.location.x,
+                right:this.location.x + this.size.width,
+                top:this.location.y,
+                bottom:this.location.y + this.size.height
+            }
             this.autoReloadAmmo(deltaTime,this.autoLoadAmmos)
             if(this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)){
                 this.location.y += this.speed.y
@@ -142,7 +184,6 @@ window.addEventListener('load',function(){
                 this.location.x += this.speed.x
             }
             //有子彈的話就要更新
-            if(this.ammos.length<1) return
             this.ammos.forEach(ammo=>{
                 ammo.update()
             })
@@ -176,28 +217,46 @@ window.addEventListener('load',function(){
             }
             this.autoLoadTimer += deltaTime
         }
+        addScore(point:number) {
+            this.score += point
+        }
     }
     abstract class Enemy extends GameObj {
+        protected killScroe:number = 5
         constructor(game:Game){
             super(game)
         }
-        update(deltaTime?:number){
-            this.location.x -= this.speed.x
-            if(this.location.x < 0) this.deleted = true
+        get gainScore () {
+            return this.killScroe
         }
         abstract draw(context:CanvasRenderingContext2D):void
+        update(deltaTime?:number){
+            this.location.x -= this.speed.x
+            this.rect = {
+                left:this.location.x,
+                right:this.location.x + this.size.width,
+                top:this.location.y,
+                bottom:this.location.y + this.size.height
+            }
+            if(this.location.x < 0 || this.hp <= 0) this.deleted = true
+        }
     }
     class Angular extends Enemy {
+        hp = 3
+        atk = 10
         constructor(game:Game){
             super(game)
             this.size = {width:50,height:50}
-            this.speed = {x:2,y:5}
+            this.speed = {x:1,y:5}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
         }
         draw(context: CanvasRenderingContext2D): void {
             if(!this.deleted) {
                 context.fillStyle = 'green'
                 context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+                context.fillStyle = 'black'
+                context.font = '20px'
+                context.fillText(this.hp.toString(),this.location.x,this.location.y)
             }
         }
     }
@@ -209,12 +268,12 @@ window.addEventListener('load',function(){
         constructor(private game:Game){}
         draw(context:CanvasRenderingContext2D){
             //畫子彈最大數量
-            for(let i = 0 ; i <this.game.getPlayer.getMaxAmmo ;i++){
+            for(let i = 0 ; i <this.game.getPlayer.getMaxAmmoNum ;i++){
                 context.fillStyle = 'gray'
                 context.fillRect(20+i*6 ,20,5,20)
             }
             //畫剩餘子彈
-            for(let i = 0 ; i <this.game.getPlayer.playerAmmos ;i++){
+            for(let i = 0 ; i <this.game.getPlayer.playerAmmoNum ;i++){
                 context.fillStyle = 'red'
                 context.fillRect(20+i*6 ,20,5,20)
             }
@@ -248,7 +307,24 @@ window.addEventListener('load',function(){
         }
         update(deltaTime:number){
             this.player.update(deltaTime)
-            this.angularEnemys.forEach(angular=>angular.update(deltaTime))
+            this.angularEnemys.forEach(angular=>{
+                angular.update(deltaTime)
+                //檢測碰撞
+                if(angular.checkCollisionWith(this.player.objRect)){
+                    angular.tweakHp(this.player.ATK)
+                }
+                //子彈也要碰撞檢測
+                this.player.playerAmmoArr.forEach(ammo=>{
+                    if(ammo.checkCollisionWith(angular.objRect)){
+                        ammo.disappear = true
+                        angular.tweakHp(ammo.ATK)
+                        if(angular.HP <= 0 ){
+                            //玩家加分數
+                            this.player.addScore(angular.gainScore)
+                        }
+                    }
+                })
+            })
             this.angularEnemys = this.angularEnemys.filter(angular=>!angular.disappear)
             this.autoGenrateAngular(deltaTime)
         }
@@ -264,14 +340,7 @@ window.addEventListener('load',function(){
             }
             this.angularBornTimer += deltaTime
         }
-        checkCollision(rect1:Rectangle,rect2:Rectangle){
-            return (
-                rect1.right > rect2.left &&
-                rect1.left < rect2.right &&
-                rect1.top > rect2.bottom &&
-                rect1.bottom < rect2.top
-            )
-        }
+        
     }
     const mainGame = new Game({width:canvas.width,height:canvas.height})
     let lastTime = 0 //儲存上一偵的timeSteamp

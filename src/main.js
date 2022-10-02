@@ -63,25 +63,48 @@ window.addEventListener('load', function () {
             };
             this.deleted = false;
         }
-        get roleRect() {
+        get HP() {
+            return this.hp;
+        }
+        get ATK() {
+            return this.atk;
+        }
+        get objRect() {
             return this.rect;
         }
         get disappear() {
             return this.deleted;
         }
+        set disappear(value) {
+            this.deleted = value;
+        }
+        checkCollisionWith(targect) {
+            return (this.rect.left < targect.right &&
+                this.rect.right > targect.left &&
+                this.rect.top < targect.bottom &&
+                this.rect.bottom > targect.top);
+        }
+        tweakHp(payload) {
+            this.hp += payload;
+        }
     }
     class Projectile extends GameObj {
         constructor(game, location) {
             super(game);
+            this.hp = 1;
+            this.atk = -1;
             this.size = { width: 10, height: 10 };
             this.location = location;
         }
-        get disappear() {
-            return this.deleted;
-        }
         update() {
             this.location.x += this.speed.x;
-            if (this.location.x > this.game.gameSize.width * 0.8)
+            this.rect = {
+                left: this.location.x,
+                right: this.location.x + this.size.width,
+                top: this.location.y,
+                bottom: this.location.y + this.size.height
+            };
+            if (this.location.x > this.game.gameSize.width * 0.8 || this.hp <= 0)
                 this.deleted = true;
         }
         draw(context) {
@@ -94,23 +117,38 @@ window.addEventListener('load', function () {
     class Player extends GameObj {
         constructor(game) {
             super(game);
+            this.hp = 100;
+            this.atk = 0;
             this.ammos = [];
             this.maxAmmo = 20; //最大彈藥數
             this.remainingBullets = 10; //玩家剩餘子彈
             this.autoLoadTimer = 0;
             this.autoLoadAmmos = 1; //自動填充的子彈數量
             this.autoLoadInterval = 5000; //自動填充的間格
+            this.score = 0;
             this.size = { width: 120, height: 150 };
             this.location = { x: 20, y: 100 };
             this.speed = { x: 5, y: 5 };
         }
-        get getMaxAmmo() {
+        get playerAmmoArr() {
+            return this.ammos;
+        }
+        get getMaxAmmoNum() {
             return this.maxAmmo;
         }
-        get playerAmmos() {
+        get playerAmmoNum() {
             return this.remainingBullets;
         }
+        get playerScore() {
+            return this.score;
+        }
         update(deltaTime) {
+            this.rect = {
+                left: this.location.x,
+                right: this.location.x + this.size.width,
+                top: this.location.y,
+                bottom: this.location.y + this.size.height
+            };
             this.autoReloadAmmo(deltaTime, this.autoLoadAmmos);
             if (this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)) {
                 this.location.y += this.speed.y;
@@ -125,8 +163,6 @@ window.addEventListener('load', function () {
                 this.location.x += this.speed.x;
             }
             //有子彈的話就要更新
-            if (this.ammos.length < 1)
-                return;
             this.ammos.forEach(ammo => {
                 ammo.update();
             });
@@ -161,28 +197,46 @@ window.addEventListener('load', function () {
             }
             this.autoLoadTimer += deltaTime;
         }
+        addScore(point) {
+            this.score += point;
+        }
     }
     class Enemy extends GameObj {
         constructor(game) {
             super(game);
+            this.killScroe = 5;
+        }
+        get gainScore() {
+            return this.killScroe;
         }
         update(deltaTime) {
             this.location.x -= this.speed.x;
-            if (this.location.x < 0)
+            this.rect = {
+                left: this.location.x,
+                right: this.location.x + this.size.width,
+                top: this.location.y,
+                bottom: this.location.y + this.size.height
+            };
+            if (this.location.x < 0 || this.hp <= 0)
                 this.deleted = true;
         }
     }
     class Angular extends Enemy {
         constructor(game) {
             super(game);
+            this.hp = 3;
+            this.atk = 10;
             this.size = { width: 50, height: 50 };
-            this.speed = { x: 2, y: 5 };
+            this.speed = { x: 1, y: 5 };
             this.location = { x: this.game.gameSize.width * 0.8, y: Math.random() * (this.game.gameSize.height - this.size.height) };
         }
         draw(context) {
             if (!this.deleted) {
                 context.fillStyle = 'green';
                 context.fillRect(this.location.x, this.location.y, this.size.width, this.size.height);
+                context.fillStyle = 'black';
+                context.font = '20px';
+                context.fillText(this.hp.toString(), this.location.x, this.location.y);
             }
         }
     }
@@ -196,12 +250,12 @@ window.addEventListener('load', function () {
         }
         draw(context) {
             //畫子彈最大數量
-            for (let i = 0; i < this.game.getPlayer.getMaxAmmo; i++) {
+            for (let i = 0; i < this.game.getPlayer.getMaxAmmoNum; i++) {
                 context.fillStyle = 'gray';
                 context.fillRect(20 + i * 6, 20, 5, 20);
             }
             //畫剩餘子彈
-            for (let i = 0; i < this.game.getPlayer.playerAmmos; i++) {
+            for (let i = 0; i < this.game.getPlayer.playerAmmoNum; i++) {
                 context.fillStyle = 'red';
                 context.fillRect(20 + i * 6, 20, 5, 20);
             }
@@ -229,7 +283,24 @@ window.addEventListener('load', function () {
         }
         update(deltaTime) {
             this.player.update(deltaTime);
-            this.angularEnemys.forEach(angular => angular.update(deltaTime));
+            this.angularEnemys.forEach(angular => {
+                angular.update(deltaTime);
+                //檢測碰撞
+                if (angular.checkCollisionWith(this.player.objRect)) {
+                    angular.tweakHp(this.player.ATK);
+                }
+                //子彈也要碰撞檢測
+                this.player.playerAmmoArr.forEach(ammo => {
+                    if (ammo.checkCollisionWith(angular.objRect)) {
+                        ammo.disappear = true;
+                        angular.tweakHp(ammo.ATK);
+                        if (angular.HP <= 0) {
+                            //玩家加分數
+                            this.player.addScore(angular.gainScore);
+                        }
+                    }
+                });
+            });
             this.angularEnemys = this.angularEnemys.filter(angular => !angular.disappear);
             this.autoGenrateAngular(deltaTime);
         }
@@ -244,12 +315,6 @@ window.addEventListener('load', function () {
                 this.angularBornTimer = 0;
             }
             this.angularBornTimer += deltaTime;
-        }
-        checkCollision(rect1, rect2) {
-            return (rect1.right > rect2.left &&
-                rect1.left < rect2.right &&
-                rect1.top > rect2.bottom &&
-                rect1.bottom < rect2.top);
         }
     }
     const mainGame = new Game({ width: canvas.width, height: canvas.height });
