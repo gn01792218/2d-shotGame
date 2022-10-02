@@ -58,9 +58,9 @@ window.addEventListener('load', function () {
             return this.deleted;
         }
         updated() {
+            this.position.x += this.speed.x;
             if (this.position.x > this.game.gameSize.width * 0.8)
                 this.deleted = true;
-            this.position.x += this.speed.x;
         }
         draw(context) {
             if (!this.deleted) {
@@ -79,12 +79,23 @@ window.addEventListener('load', function () {
             this.location = { x: 0, y: 0 };
             this.speed = { x: 5, y: 5 };
             this.ammos = [];
-            this.remainingBullets = 20;
+            this.maxAmmo = 20; //最大彈藥數
+            this.remainingBullets = 10; //玩家剩餘子彈
+            this.autoLoadTimer = 0;
+            this.autoLoadAmmos = 1; //自動填充的子彈數量
+            this.autoLoadInterval = 5000; //自動填充的間格
             this.game = game;
             this.location.x = 20;
             this.location.y = 100;
         }
-        update() {
+        get getMaxAmmo() {
+            return this.maxAmmo;
+        }
+        get playerAmmos() {
+            return this.remainingBullets;
+        }
+        update(deltaTime) {
+            this.autoReloadAmmo(deltaTime, this.autoLoadAmmos);
             if (this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)) {
                 this.location.y += this.speed.y;
             }
@@ -103,7 +114,7 @@ window.addEventListener('load', function () {
             this.ammos.forEach(ammo => {
                 ammo.updated();
             });
-            //更新子彈陣列(把尚未delete的子彈filter出來)
+            //更新子彈陣列(把尚未delete的子彈filter出來，即移除被標示為delete的子彈)
             this.ammos = this.ammos.filter(ammo => !ammo.disappear);
         }
         draw(context) {
@@ -125,6 +136,15 @@ window.addEventListener('load', function () {
         reloadAmmo() {
             this.remainingBullets += (20 - this.remainingBullets);
         }
+        autoReloadAmmo(deltaTime, autoLoadAmmos) {
+            if (this.remainingBullets >= this.maxAmmo)
+                return;
+            if (this.autoLoadTimer > this.autoLoadInterval) {
+                this.remainingBullets += autoLoadAmmos; //增加子彈
+                this.autoLoadTimer = 0;
+            }
+            this.autoLoadTimer += deltaTime;
+        }
     }
     class Enemy {
     }
@@ -133,10 +153,26 @@ window.addEventListener('load', function () {
     class Background {
     }
     class UI {
+        constructor(game) {
+            this.game = game;
+        }
+        draw(context) {
+            //畫子彈最大數量
+            for (let i = 0; i < this.game.getPlayer.getMaxAmmo; i++) {
+                context.fillStyle = 'gray';
+                context.fillRect(20 + i * 6, 20, 5, 20);
+            }
+            //畫剩餘子彈
+            for (let i = 0; i < this.game.getPlayer.playerAmmos; i++) {
+                context.fillStyle = 'red';
+                context.fillRect(20 + i * 6, 20, 5, 20);
+            }
+        }
     }
     class Game {
         constructor(size) {
             this.size = size;
+            this.ui = new UI(this);
             this.player = new Player(this);
             this.inputHandler = new InputHandler(this);
             this.commandKeys = [];
@@ -150,19 +186,23 @@ window.addEventListener('load', function () {
         get gameSize() {
             return this.size;
         }
-        update() {
-            this.player.update();
+        update(deltaTime) {
+            this.player.update(deltaTime);
         }
         draw(context) {
+            this.ui.draw(context);
             this.player.draw(context);
         }
     }
     const mainGame = new Game({ width: canvas.width, height: canvas.height });
-    function animate() {
+    let lastTime = 0; //儲存上一偵的timeSteamp
+    animate(0);
+    function animate(timeStamp) {
+        const deltaTime = timeStamp - lastTime; //時間增量 : 當偵和上一偵的時間差 ； 電腦越舊數值越高 (render animation 時間越多)
+        lastTime = timeStamp; //更新lastTime
         ctx === null || ctx === void 0 ? void 0 : ctx.clearRect(0, 0, canvas.width, canvas.height);
-        mainGame.update();
+        mainGame.update(deltaTime); //將時間差傳給update做使用
         mainGame.draw(ctx);
         requestAnimationFrame(animate);
     }
-    animate();
 });
