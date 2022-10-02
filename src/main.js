@@ -51,7 +51,7 @@ window.addEventListener('load', function () {
             this.game = game;
             this.position = position;
             this.size = size;
-            this.speed = { x: 10, y: 10 };
+            this.speed = { x: 5, y: 5 };
             this.deleted = false;
         }
         get disappear() {
@@ -79,23 +79,23 @@ window.addEventListener('load', function () {
             this.location = { x: 0, y: 0 };
             this.speed = { x: 5, y: 5 };
             this.ammos = [];
-            this.remainingBullets = 5;
+            this.remainingBullets = 20;
             this.game = game;
             this.location.x = 20;
             this.location.y = 100;
         }
         update() {
             if (this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)) {
-                this.location.y -= this.speed.y;
-            }
-            if (this.game.keyBoardCommands.includes(KeyBoardCommands.UP)) {
                 this.location.y += this.speed.y;
             }
+            if (this.game.keyBoardCommands.includes(KeyBoardCommands.UP)) {
+                this.location.y -= this.speed.y;
+            }
             if (this.game.keyBoardCommands.includes(KeyBoardCommands.LEFT)) {
-                this.location.x += this.speed.x;
+                this.location.x -= this.speed.x;
             }
             if (this.game.keyBoardCommands.includes(KeyBoardCommands.RIGHT)) {
-                this.location.x -= this.speed.x;
+                this.location.x += this.speed.x;
             }
             //有子彈的話就要更新
             if (this.ammos.length < 1)
@@ -121,10 +121,9 @@ window.addEventListener('load', function () {
             //按一下空白鍵就發射一顆
             this.ammos.push(new Projectile(this.game, { x: this.location.x, y: this.location.y }, { width: 10, height: 10 }));
             this.remainingBullets--;
-            console.log('發射', this.ammos);
         }
         reloadAmmo() {
-            this.remainingBullets += (5 - this.remainingBullets);
+            this.remainingBullets += (20 - this.remainingBullets);
         }
     }
     class Enemy {

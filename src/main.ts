@@ -58,7 +58,7 @@ window.addEventListener('load',function(){
         }
     }
     class Projectile {
-        private speed:Speed = {x:10,y:10}
+        private speed:Speed = {x:5,y:5}
         private deleted:Boolean
         constructor(private game:Game,private position:Coordinate,private size:Size){
             this.deleted = false
@@ -84,7 +84,7 @@ window.addEventListener('load',function(){
         private location:Coordinate = {x:0,y:0}
         private speed:Speed = {x:5,y:5}
         private ammos:Projectile[] = []
-        private remainingBullets = 5
+        private remainingBullets = 20
         constructor(private game:Game) {
             this.game = game
             this.location.x = 20
@@ -92,16 +92,16 @@ window.addEventListener('load',function(){
         }
         update(){
             if(this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)){
-                this.location.y -= this.speed.y
-            }
-            if(this.game.keyBoardCommands.includes(KeyBoardCommands.UP)){
                 this.location.y += this.speed.y
             }
+            if(this.game.keyBoardCommands.includes(KeyBoardCommands.UP)){
+                this.location.y -= this.speed.y
+            }
             if(this.game.keyBoardCommands.includes(KeyBoardCommands.LEFT)){
-                this.location.x += this.speed.x
+                this.location.x -= this.speed.x
             }
             if(this.game.keyBoardCommands.includes(KeyBoardCommands.RIGHT)){
-                this.location.x -= this.speed.x
+                this.location.x += this.speed.x
             }
             //有子彈的話就要更新
             if(this.ammos.length<1) return
@@ -128,7 +128,7 @@ window.addEventListener('load',function(){
             this.remainingBullets --
         }
         reloadAmmo() {
-            this.remainingBullets += (5-this.remainingBullets)
+            this.remainingBullets += (20-this.remainingBullets)
         }
     }
     class Enemy {}
