@@ -78,21 +78,33 @@ window.addEventListener('load',function(){
         }
     }
     class Particle {}
-    class Player {
+    abstract class GameRole {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
-        private size:Size = {width:120,height:150}
-        private location:Coordinate = {x:0,y:0}
-        private speed:Speed = {x:5,y:5}
+        protected size:Size = {width:120,height:150}
+        protected location:Coordinate = {x:0,y:0}
+        protected speed:Speed = {x:5,y:5}
+        protected deleted:Boolean
+        get disappear () {
+            return this.deleted
+        }
+        constructor(protected game:Game){
+            this.deleted = false
+        }
+        abstract update(deltaTime?:number):void
+        abstract draw(context:CanvasRenderingContext2D):void
+    }
+    class Player extends GameRole{
         private ammos:Projectile[] = []
         private maxAmmo = 20  //最大彈藥數
         private remainingBullets = 10  //玩家剩餘子彈
         private autoLoadTimer = 0
         private autoLoadAmmos = 1 //自動填充的子彈數量
         private autoLoadInterval = 5000 //自動填充的間格
-        constructor(private game:Game) {
-            this.game = game
-            this.location.x = 20
-            this.location.y = 100
+        constructor(game:Game) {
+            super(game)
+            this.size = {width:120,height:150}
+            this.location = {x:20,y:100}
+            this.speed = {x:5,y:5}
         }
         get getMaxAmmo () {
             return this.maxAmmo
@@ -150,7 +162,30 @@ window.addEventListener('load',function(){
             this.autoLoadTimer += deltaTime
         }
     }
-    class Enemy {}
+    abstract class Enemy extends GameRole {
+        constructor(game:Game){
+            super(game)
+        }
+        update(deltaTime?:number){
+            this.location.x -= this.speed.x
+            if(this.location.x < 0) this.deleted = true
+        }
+        abstract draw(context:CanvasRenderingContext2D):void
+    }
+    class Angular extends Enemy {
+        constructor(game:Game){
+            super(game)
+            this.size = {width:50,height:50}
+            this.speed = {x:2,y:5}
+            this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
+        }
+        draw(context: CanvasRenderingContext2D): void {
+            if(!this.deleted) {
+                context.fillStyle = 'green'
+                context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+            }
+        }
+    }
     class Layer {}
     class Background { //pull all layer obj together to animate the entire game world
 
@@ -175,11 +210,17 @@ window.addEventListener('load',function(){
         private player:Player
         private inputHandler:InputHandler
         private commandKeys:string[]
+        private angularEnemys:Angular[]
+        private angularBornTimer:number //燈籠魚自動生成計時器
+        private angularBornInterval:number 
         constructor(private size:Size){
             this.ui = new UI(this)
             this.player = new Player(this)
             this.inputHandler = new InputHandler(this)
             this.commandKeys = []
+            this.angularEnemys = []
+            this.angularBornTimer = 0
+            this.angularBornInterval = 1000
         }
         get getPlayer () {
             return this.player
@@ -192,10 +233,21 @@ window.addEventListener('load',function(){
         }
         update(deltaTime:number){
             this.player.update(deltaTime)
+            this.angularEnemys.forEach(angular=>angular.update(deltaTime))
+            this.angularEnemys = this.angularEnemys.filter(angular=>!angular.disappear)
+            this.autoGenrateAngular(deltaTime)
         }
         draw(context:CanvasRenderingContext2D){
             this.ui.draw(context)
             this.player.draw(context)
+            this.angularEnemys.forEach(angular=>angular.draw(context))
+        }
+        autoGenrateAngular(deltaTime:number){
+            if(this.angularBornTimer > this.angularBornInterval) {
+                this.angularEnemys.push(new Angular(this))
+                this.angularBornTimer = 0
+            }
+            this.angularBornTimer += deltaTime
         }
     }
     const mainGame = new Game({width:canvas.width,height:canvas.height})
