@@ -275,6 +275,26 @@ window.addEventListener('load', function () {
                 context.fillStyle = 'red';
                 context.fillRect(20 + i * 6, 20, 5, 20);
             }
+            //計時器
+            context.fillText(`Timer:${this.game.gameTimeCount.toFixed(2)}`, 20, 100);
+            //輸贏顯示
+            if (this.game.isGameEnd) {
+                let msg1;
+                let msg2;
+                context.textAlign = 'center';
+                if (this.game.getPlayer.playerScore > this.game.getWiningScore) {
+                    msg1 = 'You Win';
+                    msg2 = 'Will Done!';
+                }
+                else {
+                    msg1 = 'You loss';
+                    msg2 = 'Try Again';
+                }
+                context.font = 'bold 50px serif';
+                context.fillText(msg1, this.game.gameSize.width * 0.5, this.game.gameSize.height * 0.5);
+                context.font = 'bold 25px serif';
+                context.fillText(msg2, this.game.gameSize.width * 0.5, this.game.gameSize.height * 0.6);
+            }
             context.restore();
         }
     }
@@ -288,7 +308,10 @@ window.addEventListener('load', function () {
             this.angularEnemys = [];
             this.angularBornTimer = 0;
             this.angularBornInterval = 1000;
+            this.gameTimer = 0;
+            this.gameTimeLimit = 100000;
             this.winScore = 20;
+            this.gameEnd = false;
         }
         get getPlayer() {
             return this.player;
@@ -299,10 +322,26 @@ window.addEventListener('load', function () {
         get gameSize() {
             return this.size;
         }
+        get gameTimeCount() {
+            return this.gameTimer;
+        }
+        get getWiningScore() {
+            return this.winScore;
+        }
+        get isGameEnd() {
+            return this.gameEnd;
+        }
         update(deltaTime) {
             this.player.update(deltaTime);
             this.angularEnemys.forEach(angular => {
                 angular.update(deltaTime);
+                //遊戲結束判斷
+                if (this.player.playerScore > this.winScore ||
+                    this.gameTimer > this.gameTimeLimit)
+                    this.gameEnd = true;
+                //計時
+                if (!this.gameEnd)
+                    this.gameTimer += deltaTime;
                 //檢測碰撞
                 if (angular.checkCollisionWith(this.player.objRect)) {
                     angular.tweakHp(this.player.ATK);
