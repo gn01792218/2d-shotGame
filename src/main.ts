@@ -360,14 +360,14 @@ window.addEventListener('load',function(){
             return this.gameEnd
         }
         update(deltaTime:number){
+             //遊戲結束判斷
+            if(this.player.playerScore > this.winScore ||
+                this.gameTimer > this.gameTimeLimit) this.gameEnd = true
+            //計時
+            if(!this.gameEnd) this.gameTimer += deltaTime
             this.player.update(deltaTime)
             this.angularEnemys.forEach(angular=>{
                 angular.update(deltaTime)
-                //遊戲結束判斷
-                if(this.player.playerScore > this.winScore ||
-                    this.gameTimer > this.gameTimeLimit) this.gameEnd = true
-                //計時
-                if(!this.gameEnd) this.gameTimer += deltaTime
                 //檢測碰撞
                 if(angular.checkCollisionWith(this.player.objRect)){
                     angular.tweakHp(this.player.ATK)
