@@ -248,7 +248,7 @@ window.addEventListener('load',function(){
         constructor(game:Game){
             super(game)
             this.size = {width:50,height:50}
-            this.speed = {x:1,y:5}
+            this.speed = {x:2,y:5}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
         }
         draw(context: CanvasRenderingContext2D): void {
@@ -268,9 +268,38 @@ window.addEventListener('load',function(){
             }
         }
     }
-    class Layer {}
+    class Layer {
+        private size:Size = {width:1768,height:500}
+        private location:Coordinate = {x:0,y:0}
+        constructor(private game:Game, private image:HTMLImageElement,private speed:Speed){
+        }
+        update(){
+            //重置圖片，造成無限迴圈
+            if(this.location.x <= -this.size.width ) this.location.x = 0 
+            else this.location.x -= this.speed.x
+        }
+        draw(context:CanvasRenderingContext2D){
+            context.drawImage(this.image,this.location.x,this.location.y)
+        }
+    }
     class Background { //pull all layer obj together to animate the entire game world
-
+        private layers:Layer[] = []
+        constructor(private game:Game){
+            let layerImg1 = document.getElementById('layer1') as HTMLImageElement
+            let layerImg2 = document.getElementById('layer2') as HTMLImageElement
+            let layerImg3 = document.getElementById('layer3') as HTMLImageElement
+            let layerImg4 = document.getElementById('layer4') as HTMLImageElement
+            this.layers.push(new Layer(this.game,layerImg1,{x:1,y:0}))
+            this.layers.push(new Layer(this.game,layerImg2,{x:1,y:0}))
+            this.layers.push(new Layer(this.game,layerImg3,{x:1,y:0}))
+            this.layers.push(new Layer(this.game,layerImg4,{x:1,y:0}))
+        }
+        update(){
+            this.layers.forEach(layer=>layer.update())
+        }
+        draw(context:CanvasRenderingContext2D){
+            this.layers.forEach(layer=>layer.draw(context))
+        }
     }  
     class UI { //score、timer、and other infomation
         constructor(private game:Game){}
@@ -317,6 +346,7 @@ window.addEventListener('load',function(){
         }
     }
     class Game {
+        private bg:Background
         private ui:UI
         private player:Player
         private inputHandler:InputHandler
@@ -329,6 +359,7 @@ window.addEventListener('load',function(){
         private winScore:number
         private gameEnd:Boolean
         constructor(private size:Size){
+            this.bg = new Background(this)
             this.ui = new UI(this)
             this.player = new Player(this)
             this.inputHandler = new InputHandler(this)
@@ -360,6 +391,8 @@ window.addEventListener('load',function(){
             return this.gameEnd
         }
         update(deltaTime:number){
+            //bg
+            this.bg.update()
              //遊戲結束判斷
             if(this.player.playerScore > this.winScore ||
                 this.gameTimer > this.gameTimeLimit) this.gameEnd = true
@@ -388,6 +421,7 @@ window.addEventListener('load',function(){
             this.autoGenrateAngular(deltaTime)
         }
         draw(context:CanvasRenderingContext2D){
+            this.bg.draw(context)
             this.ui.draw(context)
             this.player.draw(context)
             this.angularEnemys.forEach(angular=>angular.draw(context))
