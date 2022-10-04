@@ -285,16 +285,24 @@ window.addEventListener('load',function(){
         }
     }
     class Background { //pull all layer obj together to animate the entire game world
-        private layers:Layer[] = []
+        private layers:Layer[]
+        private layer1:Layer
+        private layer2:Layer
+        private layer3:Layer
+        private layer4:Layer
         constructor(private game:Game){
             let layerImg1 = document.getElementById('layer1') as HTMLImageElement
             let layerImg2 = document.getElementById('layer2') as HTMLImageElement
             let layerImg3 = document.getElementById('layer3') as HTMLImageElement
             let layerImg4 = document.getElementById('layer4') as HTMLImageElement
-            this.layers.push(new Layer(this.game,layerImg1,{x:1,y:0}))
-            this.layers.push(new Layer(this.game,layerImg2,{x:1,y:0}))
-            this.layers.push(new Layer(this.game,layerImg3,{x:1,y:0}))
-            this.layers.push(new Layer(this.game,layerImg4,{x:1,y:0}))
+            this.layer1 = new Layer(this.game,layerImg1,{x:1,y:0})
+            this.layer2 = new Layer(this.game,layerImg2,{x:1,y:0})
+            this.layer3 = new Layer (this.game,layerImg3,{x:1,y:0})
+            this.layer4 = new Layer (this.game,layerImg4,{x:1,y:0})
+            this.layers = [this.layer1,this.layer2,this.layer3]
+        }
+        get getLayer4 () {
+            return this.layer4
         }
         update(){
             this.layers.forEach(layer=>layer.update())
@@ -398,8 +406,9 @@ window.addEventListener('load',function(){
             return this.gameSpeed
         }
         update(deltaTime:number){
-            //bg
+            //bg (layer4為了要畫在最前面，所以獨立出來)
             this.bg.update()
+            this.bg.getLayer4.update()
              //遊戲結束判斷
             if(this.player.playerScore > this.winScore ||
                 this.gameTimer > this.gameTimeLimit) this.gameEnd = true
@@ -432,6 +441,8 @@ window.addEventListener('load',function(){
             this.ui.draw(context)
             this.player.draw(context)
             this.angularEnemys.forEach(angular=>angular.draw(context))
+            //讓layer4畫在最上面
+            this.bg.getLayer4.draw(context)
         }
         autoGenrateAngular(deltaTime:number){
             if(this.player.playerScore >= this.winScore) return
