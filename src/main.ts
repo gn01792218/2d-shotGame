@@ -271,15 +271,17 @@ window.addEventListener('load',function(){
     class Layer {
         private size:Size = {width:1768,height:500}
         private location:Coordinate = {x:0,y:0}
-        constructor(private game:Game, private image:HTMLImageElement,private speed:Speed){
+        constructor(private game:Game, private image:HTMLImageElement,private speedModifier:Speed = {x:1,y:1}){
         }
         update(){
             //重置圖片，造成無限迴圈
             if(this.location.x <= -this.size.width ) this.location.x = 0 
-            else this.location.x -= this.speed.x
+            this.location.x -= this.speedModifier.x * this.game.baseSpeed.x
         }
         draw(context:CanvasRenderingContext2D){
             context.drawImage(this.image,this.location.x,this.location.y)
+            //為了圖片不間斷的第二張圖
+            context.drawImage(this.image,this.location.x+this.size.width,this.location.y)
         }
     }
     class Background { //pull all layer obj together to animate the entire game world
@@ -358,6 +360,7 @@ window.addEventListener('load',function(){
         private gameTimeLimit:number
         private winScore:number
         private gameEnd:Boolean
+        private gameSpeed:Speed //控制遊戲中物件速度的基準
         constructor(private size:Size){
             this.bg = new Background(this)
             this.ui = new UI(this)
@@ -371,6 +374,7 @@ window.addEventListener('load',function(){
             this.gameTimeLimit = 100000
             this.winScore = 20
             this.gameEnd = false
+            this.gameSpeed = {x:1,y:1}
         }
         get getPlayer () {
             return this.player
@@ -389,6 +393,9 @@ window.addEventListener('load',function(){
         }
         get isGameEnd () {
             return this.gameEnd
+        }
+        get baseSpeed () {
+            return this.gameSpeed
         }
         update(deltaTime:number){
             //bg
