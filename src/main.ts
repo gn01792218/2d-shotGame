@@ -23,7 +23,8 @@ enum KeyBoardCommands {
     LEFT = 'ArrowLeft',
     RIGHT = 'ArrowRight',
     FIRE = ' ',
-    RELOAD = 'r'
+    RELOAD = 'r',
+    DEBUG = 'd',
 }
 //load事件時，渲染出遊戲場景
 window.addEventListener('load',function(){
@@ -43,13 +44,16 @@ window.addEventListener('load',function(){
                     case KeyBoardCommands.LEFT:
                     case KeyBoardCommands.RIGHT:
                         this.game.keyBoardCommands.push(e.key)
-                        console.log(this.game.keyBoardCommands)
                         break
                     case KeyBoardCommands.FIRE:  //接收到空白鍵時，叫玩家發射
                         this.game.getPlayer.fire()
                         break
                     case KeyBoardCommands.RELOAD:
                         this.game.getPlayer.reloadAmmo()
+                        break
+                    case KeyBoardCommands.DEBUG:
+                        this.game.getDebug = !this.game.getDebug 
+                        break
                 }
             })
             window.addEventListener('keyup',(e)=>{
@@ -130,8 +134,11 @@ window.addEventListener('load',function(){
         }
         draw(context:CanvasRenderingContext2D){
             if(!this.deleted) {
+                context.save()
+                if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
                 context.fillStyle = 'yellow'
                 context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+                context.restore()
             }
         }
     }
@@ -141,7 +148,7 @@ window.addEventListener('load',function(){
         private playerImg:HTMLImageElement
         private imgXFrame = 0 //要畫playerImg的第幾張小圖之左上x
         private imgYFrame = 0 //要畫playerImg的第幾張小圖之左上y
-        private imgMaxFrame = 37 //playerImg 一行 有多少張小圖
+        private imgMaxFrame = 39 //playerImg 一行 有多少張小圖
         private ammos:Projectile[] = []
         private maxAmmo = 20  //最大彈藥數
         private remainingBullets = 10  //玩家剩餘子彈
@@ -204,6 +211,7 @@ window.addEventListener('load',function(){
         }
         draw(context:CanvasRenderingContext2D){
             //1.畫自己
+            if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
             context.fillStyle = 'transparent'
             context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
             context.drawImage(this.playerImg,this.imgXFrame*this.size.width,this.imgYFrame*this.size.height,this.size.width,this.size.height,
@@ -267,6 +275,7 @@ window.addEventListener('load',function(){
         draw(context: CanvasRenderingContext2D): void {
             if(!this.deleted) {
                 context.save()
+                if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
                 context.fillStyle = 'green'
                 context.shadowColor = 'black'
                 context.shadowBlur = 10
@@ -382,6 +391,7 @@ window.addEventListener('load',function(){
         private winScore:number
         private gameEnd:Boolean
         private gameSpeed:Speed //控制遊戲中物件速度的基準
+        private debug:Boolean
         constructor(private size:Size){
             this.bg = new Background(this)
             this.ui = new UI(this)
@@ -396,6 +406,7 @@ window.addEventListener('load',function(){
             this.winScore = 20
             this.gameEnd = false
             this.gameSpeed = {x:1,y:1}
+            this.debug = true
         }
         get getPlayer () {
             return this.player
@@ -417,6 +428,12 @@ window.addEventListener('load',function(){
         }
         get baseSpeed () {
             return this.gameSpeed
+        }
+        get getDebug() {
+            return this.debug
+        }
+        set getDebug(valur:Boolean){
+            this.debug = valur
         }
         update(deltaTime:number){
             //bg (layer4為了要畫在最前面，所以獨立出來)
