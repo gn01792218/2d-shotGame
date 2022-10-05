@@ -292,6 +292,20 @@ window.addEventListener('load',function(){
             this.imgYFrame = Math.floor(Math.random()*3)
         }
     }
+    class Angular2 extends Enemy {
+        killScroe = 5
+        hp = 5
+        atk = 5
+        constructor(game:Game){
+            super(game)
+            this.size = {width:213,height:165}
+            this.speed = {x:2,y:5}
+            this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
+            this.img = document.getElementById('angler2') as HTMLImageElement
+            this.imgXFrame = 0
+            this.imgYFrame = Math.floor(Math.random()*2)
+        }
+    }
     class Layer {
         private size:Size = {width:1768,height:500}
         private location:Coordinate = {x:0,y:0}
@@ -405,7 +419,7 @@ window.addEventListener('load',function(){
             this.angularBornTimer = 0
             this.angularBornInterval = 1000
             this.gameTimer = 0
-            this.gameTimeLimit = 10000
+            this.gameTimeLimit = 100000
             this.winScore = 20
             this.gameEnd = false
             this.gameSpeed = {x:1,y:1}
@@ -478,9 +492,11 @@ window.addEventListener('load',function(){
             this.bg.getLayer4.draw(context)
         }
         autoGenrateAngular(deltaTime:number){
+            let random = Math.random()
             if(this.player.playerScore >= this.winScore) return
             if(this.angularBornTimer > this.angularBornInterval) {
-                this.angularEnemys.push(new Angular(this))
+                if(random < 0.5) this.angularEnemys.push(new Angular(this))
+                else this.angularEnemys.push(new Angular2(this))
                 this.angularBornTimer = 0
             }
             this.angularBornTimer += deltaTime
