@@ -26,6 +26,10 @@ enum KeyBoardCommands {
     RELOAD = 'r',
     DEBUG = 'd',
 }
+enum EnemyType {
+    NORMAL,
+    LUCKY,
+}
 //load事件時，渲染出遊戲場景
 window.addEventListener('load',function(){
     //canvas setup 
@@ -241,6 +245,7 @@ window.addEventListener('load',function(){
     }
     abstract class Enemy extends GameObj {
         abstract killScroe:number
+        abstract type:EnemyType
         constructor(game:Game){
             super(game)
         }
@@ -282,6 +287,7 @@ window.addEventListener('load',function(){
         killScroe = 5
         hp = 3
         atk = 10
+        type = EnemyType.NORMAL
         constructor(game:Game){
             super(game)
             this.size = {width:228,height:169}
@@ -296,12 +302,28 @@ window.addEventListener('load',function(){
         killScroe = 5
         hp = 5
         atk = 5
+        type = EnemyType.NORMAL
         constructor(game:Game){
             super(game)
             this.size = {width:213,height:165}
-            this.speed = {x:2,y:5}
+            this.speed = {x:1,y:5}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
             this.img = document.getElementById('angler2') as HTMLImageElement
+            this.imgXFrame = 0
+            this.imgYFrame = Math.floor(Math.random()*2)
+        }
+    }
+    class LuckyFish extends Enemy {
+        killScroe = 5
+        hp = 5
+        atk = 5
+        type = EnemyType.LUCKY
+        constructor(game:Game){
+            super(game)
+            this.size = {width:99,height:95}
+            this.speed = {x:3,y:5}
+            this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
+            this.img = document.getElementById('lucky') as HTMLImageElement
             this.imgXFrame = 0
             this.imgYFrame = Math.floor(Math.random()*2)
         }
@@ -495,8 +517,9 @@ window.addEventListener('load',function(){
             let random = Math.random()
             if(this.player.playerScore >= this.winScore) return
             if(this.angularBornTimer > this.angularBornInterval) {
-                if(random < 0.5) this.angularEnemys.push(new Angular(this))
-                else this.angularEnemys.push(new Angular2(this))
+                if(random < 0.3) this.angularEnemys.push(new Angular(this))
+                else if(random <0.6) this.angularEnemys.push(new Angular2(this))
+                else this.angularEnemys.push(new LuckyFish(this))
                 this.angularBornTimer = 0
             }
             this.angularBornTimer += deltaTime
