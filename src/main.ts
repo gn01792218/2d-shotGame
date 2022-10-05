@@ -138,6 +138,10 @@ window.addEventListener('load',function(){
     class Player extends GameObj{
         hp = 100
         atk = 0
+        private playerImg:HTMLImageElement
+        private imgXFrame = 0 //要畫playerImg的第幾張小圖之左上x
+        private imgYFrame = 0 //要畫playerImg的第幾張小圖之左上y
+        private imgMaxFrame = 37 //playerImg 一行 有多少張小圖
         private ammos:Projectile[] = []
         private maxAmmo = 20  //最大彈藥數
         private remainingBullets = 10  //玩家剩餘子彈
@@ -147,9 +151,10 @@ window.addEventListener('load',function(){
         private score = 0
         constructor(game:Game) {
             super(game)
-            this.size = {width:120,height:150}
+            this.playerImg = document.getElementById('player') as HTMLImageElement
+            this.size = {width:120,height:190}
             this.location = {x:20,y:100}
-            this.speed = {x:5,y:5}
+            this.speed = {x:5,y:5} 
         }
         get playerAmmoArr () {
             return this.ammos
@@ -164,6 +169,13 @@ window.addEventListener('load',function(){
             return this.score
         }
         update(deltaTime:number){
+            //角色動畫
+            if(this.imgXFrame < this.imgMaxFrame) {
+                this.imgXFrame ++
+            }else {
+                this.imgXFrame = 0
+            }
+            //角色的長方形
             this.rect = {
                 left:this.location.x,
                 right:this.location.x + this.size.width,
@@ -192,9 +204,10 @@ window.addEventListener('load',function(){
         }
         draw(context:CanvasRenderingContext2D){
             //1.畫自己
-            context.fillStyle = '#123456'
+            context.fillStyle = 'transparent'
             context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
-
+            context.drawImage(this.playerImg,this.imgXFrame*this.size.width,this.imgYFrame*this.size.height,this.size.width,this.size.height,
+                this.location.x,this.location.y,this.size.width,this.size.height)
             //2.畫子彈
             this.ammos.forEach(ammo=>{
                 ammo.draw(context)
@@ -203,7 +216,7 @@ window.addEventListener('load',function(){
         fire(){
             if(this.remainingBullets === 0) return
             //按一下空白鍵就發射一顆
-            this.ammos.push(new Projectile(this.game,{x:this.location.x,y:this.location.y})) 
+            this.ammos.push(new Projectile(this.game,{x:this.rect.right-5,y:this.rect.top+20})) 
             this.remainingBullets --
         }
         reloadAmmo() {
