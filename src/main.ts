@@ -80,6 +80,10 @@ window.addEventListener('load',function(){
             top:this.location.y,
             bottom:this.location.y + this.size.height
         }
+        protected img:HTMLImageElement
+        protected imgXFrame = 0 //要畫playerImg的第幾張小圖之左上x
+        protected imgYFrame = 0 //要畫playerImg的第幾張小圖之左上y
+        protected imgMaxFrame = 39 //playerImg 一行 有多少張小圖
         abstract hp:number
         abstract atk:number
         get HP () {
@@ -145,10 +149,6 @@ window.addEventListener('load',function(){
     class Player extends GameObj{
         hp = 100
         atk = 0
-        private playerImg:HTMLImageElement
-        private imgXFrame = 0 //要畫playerImg的第幾張小圖之左上x
-        private imgYFrame = 0 //要畫playerImg的第幾張小圖之左上y
-        private imgMaxFrame = 39 //playerImg 一行 有多少張小圖
         private ammos:Projectile[] = []
         private maxAmmo = 20  //最大彈藥數
         private remainingBullets = 10  //玩家剩餘子彈
@@ -158,7 +158,7 @@ window.addEventListener('load',function(){
         private score = 0
         constructor(game:Game) {
             super(game)
-            this.playerImg = document.getElementById('player') as HTMLImageElement
+            this.img = document.getElementById('player') as HTMLImageElement
             this.size = {width:120,height:190}
             this.location = {x:20,y:100}
             this.speed = {x:5,y:5} 
@@ -177,11 +177,8 @@ window.addEventListener('load',function(){
         }
         update(deltaTime:number){
             //角色動畫
-            if(this.imgXFrame < this.imgMaxFrame) {
-                this.imgXFrame ++
-            }else {
-                this.imgXFrame = 0
-            }
+            if(this.imgXFrame < this.imgMaxFrame) this.imgXFrame ++
+            else this.imgXFrame = 0
             //角色的長方形
             this.rect = {
                 left:this.location.x,
@@ -214,7 +211,7 @@ window.addEventListener('load',function(){
             if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
             context.fillStyle = 'transparent'
             context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
-            context.drawImage(this.playerImg,this.imgXFrame*this.size.width,this.imgYFrame*this.size.height,this.size.width,this.size.height,
+            context.drawImage(this.img,this.imgXFrame*this.size.width,this.imgYFrame*this.size.height,this.size.width,this.size.height,
                 this.location.x,this.location.y,this.size.width,this.size.height)
             //2.畫子彈
             this.ammos.forEach(ammo=>{
@@ -250,7 +247,6 @@ window.addEventListener('load',function(){
         get gainScore () {
             return this.killScroe
         }
-        abstract draw(context:CanvasRenderingContext2D):void
         update(deltaTime?:number){
             this.location.x -= this.speed.x
             this.rect = {
@@ -260,6 +256,26 @@ window.addEventListener('load',function(){
                 bottom:this.location.y + this.size.height
             }
             if(this.location.x < 0 || this.hp <= 0) this.deleted = true
+            //角色動畫
+            if(this.imgXFrame < this.imgMaxFrame) this.imgXFrame ++
+            else this.imgXFrame = 0
+        }
+        draw(context: CanvasRenderingContext2D): void {
+            if(!this.deleted) {
+                context.save()
+                if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
+                //畫自己
+                context.fillStyle = 'transparent'
+                context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
+                context.drawImage(this.img,this.imgXFrame*this.size.width,this.imgYFrame*this.size.height,this.size.width,this.size.height,
+                    this.location.x,this.location.y,this.size.width,this.size.height)
+                //顯示分數
+                context.restore()
+                context.fillStyle = 'black'
+                context.font = 'bold 16px serif'
+                context.fillText(this.hp.toString(),this.location.x,this.location.y)
+                context.restore()
+            }
         }
     }
     class Angular extends Enemy {
@@ -268,26 +284,12 @@ window.addEventListener('load',function(){
         atk = 10
         constructor(game:Game){
             super(game)
-            this.size = {width:50,height:50}
+            this.size = {width:228,height:169}
             this.speed = {x:2,y:5}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
-        }
-        draw(context: CanvasRenderingContext2D): void {
-            if(!this.deleted) {
-                context.save()
-                if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
-                context.fillStyle = 'green'
-                context.shadowColor = 'black'
-                context.shadowBlur = 10
-                context.shadowOffsetX = 10
-                context.shadowOffsetY = 5
-                context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
-                context.restore()
-                context.fillStyle = 'black'
-                context.font = 'bold 16px serif'
-                context.fillText(this.hp.toString(),this.location.x,this.location.y)
-                context.restore()
-            }
+            this.img = document.getElementById('angler') as HTMLImageElement
+            this.imgXFrame = 0
+            this.imgYFrame = Math.floor(Math.random()*3)
         }
     }
     class Layer {
@@ -368,6 +370,7 @@ window.addEventListener('load',function(){
                 }else {
                     msg1 = 'You loss'
                     msg2 = 'Try Again'
+                    context.fillStyle = 'grey'
                 }
                 context.font = 'bold 50px serif'
                 context.fillText(msg1,this.game.gameSize.width*0.5,this.game.gameSize.height*0.5)
@@ -402,7 +405,7 @@ window.addEventListener('load',function(){
             this.angularBornTimer = 0
             this.angularBornInterval = 1000
             this.gameTimer = 0
-            this.gameTimeLimit = 100000
+            this.gameTimeLimit = 10000
             this.winScore = 20
             this.gameEnd = false
             this.gameSpeed = {x:1,y:1}
