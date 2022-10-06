@@ -107,6 +107,7 @@ window.addEventListener('load', function () {
             this.atk = -1;
             this.size = { width: 10, height: 10 };
             this.location = location;
+            this.img = document.getElementById('projectile');
         }
         update() {
             this.location.x += this.speed.x;
@@ -124,8 +125,9 @@ window.addEventListener('load', function () {
                 context.save();
                 if (this.game.getDebug)
                     context.strokeRect(this.location.x, this.location.y, this.size.width, this.size.height);
-                context.fillStyle = 'yellow';
+                // context.fillStyle = 'transparent'
                 context.fillRect(this.location.x, this.location.y, this.size.width, this.size.height);
+                context.drawImage(this.img, this.location.x, this.location.y);
                 context.restore();
             }
         }
@@ -134,7 +136,7 @@ window.addEventListener('load', function () {
         constructor(game) {
             super(game);
             this.hp = 100;
-            this.atk = 0;
+            this.atk = -1;
             this.ammos = [];
             this.maxAmmo = 20; //最大彈藥數
             this.remainingBullets = 10; //玩家剩餘子彈
@@ -299,11 +301,11 @@ window.addEventListener('load', function () {
         constructor(game) {
             super(game);
             this.killScroe = 5;
-            this.hp = 3;
-            this.atk = 10;
+            this.hp = 5;
+            this.atk = -10;
             this.type = EnemyType.NORMAL;
             this.size = { width: 228, height: 169 };
-            this.speed = { x: 2, y: 5 };
+            this.speed = { x: 1.3, y: 5 };
             this.location = { x: this.game.gameSize.width * 0.8, y: Math.random() * (this.game.gameSize.height - this.size.height) };
             this.img = document.getElementById('angler');
             this.imgXFrame = 0;
@@ -315,10 +317,10 @@ window.addEventListener('load', function () {
             super(game);
             this.killScroe = 5;
             this.hp = 5;
-            this.atk = 5;
+            this.atk = -5;
             this.type = EnemyType.NORMAL;
             this.size = { width: 213, height: 165 };
-            this.speed = { x: 1, y: 5 };
+            this.speed = { x: 1.5, y: 5 };
             this.location = { x: this.game.gameSize.width * 0.8, y: Math.random() * (this.game.gameSize.height - this.size.height) };
             this.img = document.getElementById('angler2');
             this.imgXFrame = 0;
@@ -330,10 +332,10 @@ window.addEventListener('load', function () {
             super(game);
             this.killScroe = 5;
             this.hp = 5;
-            this.atk = 5;
+            this.atk = -5;
             this.type = EnemyType.LUCKY;
             this.size = { width: 99, height: 95 };
-            this.speed = { x: 3, y: 5 };
+            this.speed = { x: 2.2, y: 5 };
             this.location = { x: this.game.gameSize.width * 0.8, y: Math.random() * (this.game.gameSize.height - this.size.height) };
             this.img = document.getElementById('lucky');
             this.imgXFrame = 0;
@@ -377,6 +379,8 @@ window.addEventListener('load', function () {
             return this.layer4;
         }
         update() {
+            if (this.game.isGameEnd)
+                return;
             this.layers.forEach(layer => layer.update());
         }
         draw(context) {
@@ -485,11 +489,15 @@ window.addEventListener('load', function () {
                 this.gameTimer > this.gameTimeLimit)
                 this.gameEnd = true;
             //計時
-            if (!this.gameEnd)
-                this.gameTimer += deltaTime;
+            if (this.gameEnd)
+                return;
+            this.gameTimer += deltaTime;
             this.player.update(deltaTime);
             this.enemys.forEach(enemy => {
                 enemy.update(deltaTime);
+                if (this.player.checkCollisionWith(enemy.objRect)) {
+                    this.player.addScore(-1);
+                }
                 //檢測碰撞
                 if (enemy.checkCollisionWith(this.player.objRect)) {
                     enemy.tweakHp(this.player.ATK);
@@ -497,6 +505,7 @@ window.addEventListener('load', function () {
                     if (enemy.type === EnemyType.LUCKY) {
                         this.player.enterPowerUp();
                         enemy.disappear = true;
+                        return;
                     }
                 }
                 //子彈也要碰撞檢測
