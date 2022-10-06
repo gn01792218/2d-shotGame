@@ -548,9 +548,9 @@ window.addEventListener('load',function(){
         }
         draw(context:CanvasRenderingContext2D){
             this.bg.draw(context)
-            this.ui.draw(context)
             this.player.draw(context)
             this.enemys.forEach(angular=>angular.draw(context))
+            this.ui.draw(context)
             //讓layer4畫在最上面
             this.bg.getLayer4.draw(context)
         }
