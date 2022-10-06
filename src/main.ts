@@ -197,6 +197,9 @@ window.addEventListener('load',function(){
                 bottom:this.location.y + this.size.height
             }
             this.autoReloadAmmo(deltaTime,this.autoLoadAmmos)
+            //限制移動範圍
+            if(this.location.y <= -this.size.height*0.5 ) this.location.y = -this.size.height*0.5
+            else if(this.location.y + this.size.height*0.5 >= this.game.gameSize.height) this.location.y = this.game.gameSize.height - this.size.height*0.5
             if(this.game.keyBoardCommands.includes(KeyBoardCommands.DOWN)){
                 this.location.y += this.speed.y
             }
