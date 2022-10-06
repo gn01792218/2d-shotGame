@@ -437,9 +437,9 @@ window.addEventListener('load',function(){
                     msg2 = 'Try Again'
                     context.fillStyle = 'grey'
                 }
-                context.font = 'bold 50px serif'
+                context.font = 'bold 70px Bebas Neue'
                 context.fillText(msg1,this.game.gameSize.width*0.5,this.game.gameSize.height*0.5)
-                context.font = 'bold 25px serif'
+                context.font = 'bold 25px Bebas Neue'
                 context.fillText(msg2,this.game.gameSize.width*0.5,this.game.gameSize.height*0.6)
             }
             context.restore()

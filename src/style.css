@@ -13,6 +13,7 @@
     background:#4d79bc;
     /* 設置寬最大100%，就算畫面縮小也會是滿版 */
     max-width: 100%;
+    font-family: 'Bebas Neue', cursive;
 }
 img{
     display: none;
