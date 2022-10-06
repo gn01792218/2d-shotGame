@@ -160,6 +160,10 @@ window.addEventListener('load',function(){
         private autoLoadAmmos = 1 //自動填充的子彈數量
         private autoLoadInterval = 5000 //自動填充的間格
         private score = 0
+        //+成狀態
+        private powerUp = false
+        private powerUpTimer = 0
+        private powerUpLimit = 5000
         constructor(game:Game) {
             super(game)
             this.img = document.getElementById('player') as HTMLImageElement
@@ -209,6 +213,16 @@ window.addEventListener('load',function(){
             })
             //更新子彈陣列(把尚未delete的子彈filter出來，即移除被標示為delete的子彈)
             this.ammos = this.ammos.filter(ammo=>!ammo.disappear)
+            //加成效果
+            if(this.powerUp) {
+                if(this.powerUpTimer < this.powerUpLimit) this.powerUpTimer += deltaTime
+                else {
+                    this.powerUp = false
+                    this.autoLoadInterval = 5000
+                    this.imgYFrame = 0
+                    this.powerUpTimer = 0
+                }
+            }
         }
         draw(context:CanvasRenderingContext2D){
             //1.畫自己
@@ -227,6 +241,12 @@ window.addEventListener('load',function(){
             //按一下空白鍵就發射一顆
             this.ammos.push(new Projectile(this.game,{x:this.rect.right-5,y:this.rect.top+20})) 
             this.remainingBullets --
+
+            //如果有+成效果會在尾巴同時發射
+            if(this.powerUp) this.fireFromTail()
+        }
+        fireFromTail(){
+            this.ammos.push(new Projectile(this.game,{x:this.rect.right-5,y:this.rect.bottom})) 
         }
         reloadAmmo() {
             this.remainingBullets += (20-this.remainingBullets)
@@ -241,6 +261,12 @@ window.addEventListener('load',function(){
         }
         addScore(point:number) {
             this.score += point
+        }
+        enterPowerUp(){
+            this.powerUp = true
+            this.powerUpTimer = 0
+            this.autoLoadInterval = 1000
+            this.imgYFrame = 1
         }
     }
     abstract class Enemy extends GameObj {
@@ -422,7 +448,7 @@ window.addEventListener('load',function(){
         private player:Player
         private inputHandler:InputHandler
         private commandKeys:string[]
-        private angularEnemys:Angular[]
+        private enemys:Angular[]
         private angularBornTimer:number //燈籠魚自動生成計時器
         private angularBornInterval:number 
         private gameTimer:number
@@ -437,7 +463,7 @@ window.addEventListener('load',function(){
             this.player = new Player(this)
             this.inputHandler = new InputHandler(this)
             this.commandKeys = []
-            this.angularEnemys = []
+            this.enemys = []
             this.angularBornTimer = 0
             this.angularBornInterval = 1000
             this.gameTimer = 0
@@ -484,32 +510,39 @@ window.addEventListener('load',function(){
             //計時
             if(!this.gameEnd) this.gameTimer += deltaTime
             this.player.update(deltaTime)
-            this.angularEnemys.forEach(angular=>{
-                angular.update(deltaTime)
+            this.enemys.forEach(enemy=>{
+                enemy.update(deltaTime)
                 //檢測碰撞
-                if(angular.checkCollisionWith(this.player.objRect)){
-                    angular.tweakHp(this.player.ATK)
+                if(enemy.checkCollisionWith(this.player.objRect)){
+                    enemy.tweakHp(this.player.ATK)
+                    //+乘效果
+                    if(enemy.type === EnemyType.LUCKY){
+                        this.player.enterPowerUp()
+                        enemy.disappear = true
+                    } 
                 }
                 //子彈也要碰撞檢測
                 this.player.playerAmmoArr.forEach(ammo=>{
-                    if(ammo.checkCollisionWith(angular.objRect)){
+                    if(ammo.checkCollisionWith(enemy.objRect)){
                         ammo.disappear = true
-                        angular.tweakHp(ammo.ATK)
-                        if(angular.HP <= 0 ){
+                        enemy.tweakHp(ammo.ATK)
+                        if(enemy.HP <= 0 ){
                             //玩家加分數
-                            this.player.addScore(angular.gainScore)
+                            this.player.addScore(enemy.gainScore)
+                            //+乘效果
+                            if(enemy.type === EnemyType.LUCKY)this.player.enterPowerUp()
                         }
                     }
                 })
             })
-            this.angularEnemys = this.angularEnemys.filter(angular=>!angular.disappear)
+            this.enemys = this.enemys.filter(enemy=>!enemy.disappear)
             this.autoGenrateAngular(deltaTime)
         }
         draw(context:CanvasRenderingContext2D){
             this.bg.draw(context)
             this.ui.draw(context)
             this.player.draw(context)
-            this.angularEnemys.forEach(angular=>angular.draw(context))
+            this.enemys.forEach(angular=>angular.draw(context))
             //讓layer4畫在最上面
             this.bg.getLayer4.draw(context)
         }
@@ -517,9 +550,9 @@ window.addEventListener('load',function(){
             let random = Math.random()
             if(this.player.playerScore >= this.winScore) return
             if(this.angularBornTimer > this.angularBornInterval) {
-                if(random < 0.3) this.angularEnemys.push(new Angular(this))
-                else if(random <0.6) this.angularEnemys.push(new Angular2(this))
-                else this.angularEnemys.push(new LuckyFish(this))
+                if(random < 0.8) this.enemys.push(new Angular(this))
+                else if(random <0.5) this.enemys.push(new Angular2(this))
+                else this.enemys.push(new LuckyFish(this))
                 this.angularBornTimer = 0
             }
             this.angularBornTimer += deltaTime
