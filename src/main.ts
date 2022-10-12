@@ -17,6 +17,11 @@ interface Rectangle {
     top:number,
     bottom:number
 }
+interface Gravity {
+    gravity:number,
+    bounceCount:number,
+    bounceBoundaries:number, //反彈的邊界
+}
 enum KeyBoardCommands {
     UP = 'ArrowUp',
     DOWN = 'ArrowDown',
@@ -71,7 +76,6 @@ window.addEventListener('load',function(){
             })
         }
     }
-    class Particle {}
     abstract class GameObj {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
         protected size:Size = {width:120,height:150}
@@ -99,6 +103,9 @@ window.addEventListener('load',function(){
         get objRect () {
             return this.rect
         }
+        get objLocation () {
+            return this.location
+        }
         get disappear () {
             return this.deleted
         }
@@ -120,6 +127,42 @@ window.addEventListener('load',function(){
         }
         tweakHp(payload:number){
             this.hp += payload
+        }
+    }
+    class Particle extends GameObj implements Gravity{
+        hp = 0
+        atk = -0.1
+        gravity = 0.5
+        bounceCount = 0
+        bounceBoundaries = 100
+        //讓粒子可以調整大小
+        private spriteSize = 50  //雪碧圖的原圖大小
+        private sizeModifier = Number(((Math.random()*0.5+0.5).toFixed(1)))
+        constructor(game:Game,location:Coordinate){
+            super(game)
+            this.location = location
+            this.img = document.getElementById('gears') as HTMLImageElement
+            this.imgXFrame = Math.floor(Math.random()*3) 
+            this.imgYFrame = Math.floor(Math.random()*3)
+            this.size = {width:this.spriteSize*this.sizeModifier,height:this.spriteSize*this.sizeModifier}
+            //讓粒子炸出時有擴散效果
+            this.speed = {x:Math.random()* 6 - 3,y:Math.random()* 15}
+           
+        }
+        update(){
+            //重力+速度一直往下掉
+            this.location.x -= this.speed.x
+            this.location.y += (this.gravity+this.speed.y) //重力+速度
+            if(this.location.y > this.game.gameSize.height + this.size.height || this.location.x < 0 -this.size.width) this.deleted = true
+            if(this.location.y > this.game.gameSize.height - this.bounceBoundaries && this.bounceCount < 3) {
+                this.bounceCount++
+                this.speed.y *= -0.5
+            }
+            
+        }
+        draw(context:CanvasRenderingContext2D){
+            context.drawImage(this.img,this.imgXFrame*this.spriteSize,this.imgYFrame*this.spriteSize,this.spriteSize,this.spriteSize,
+                this.location.x,this.location.y,this.size.width,this.size.height)
         }
     }
     class Projectile extends GameObj {
@@ -449,7 +492,7 @@ window.addEventListener('load',function(){
             context.restore()
         }
     }
-    class Game {
+    class Game { //遊戲場景
         private bg:Background
         private ui:UI
         private player:Player
@@ -464,6 +507,7 @@ window.addEventListener('load',function(){
         private gameEnd:Boolean
         private gameSpeed:Speed //控制遊戲中物件速度的基準
         private debug:Boolean
+        private particleArr:Particle[]
         constructor(private size:Size){
             this.bg = new Background(this)
             this.ui = new UI(this)
@@ -479,6 +523,7 @@ window.addEventListener('load',function(){
             this.gameEnd = false
             this.gameSpeed = {x:1,y:1}
             this.debug = true
+            this.particleArr = []
         }
         get getPlayer () {
             return this.player
@@ -538,6 +583,7 @@ window.addEventListener('load',function(){
                     if(ammo.checkCollisionWith(enemy.objRect)){
                         ammo.disappear = true
                         enemy.tweakHp(ammo.ATK)
+                        this.particleArr.push(new Particle(this,{x:enemy.objLocation.x,y:enemy.objLocation.y}))
                         if(enemy.HP <= 0 ){
                             //玩家加分數
                             this.player.addScore(enemy.gainScore)
@@ -549,11 +595,17 @@ window.addEventListener('load',function(){
             })
             this.enemys = this.enemys.filter(enemy=>!enemy.disappear)
             this.autoGenrateAngular(deltaTime)
+            //粒子update
+            this.particleArr.forEach(particle=>{
+                particle.update()
+            })
+            this.particleArr = this.particleArr.filter(particle=>!particle.disappear)
         }
         draw(context:CanvasRenderingContext2D){
             this.bg.draw(context)
             this.player.draw(context)
             this.enemys.forEach(angular=>angular.draw(context))
+            this.particleArr.forEach(particle=>particle.draw(context ))
             this.ui.draw(context)
             //讓layer4畫在最上面
             this.bg.getLayer4.draw(context)
