@@ -146,19 +146,20 @@ window.addEventListener('load',function(){
             this.imgYFrame = Math.floor(Math.random()*3)
             this.size = {width:this.spriteSize*this.sizeModifier,height:this.spriteSize*this.sizeModifier}
             //讓粒子炸出時有擴散效果
-            this.speed = {x:Math.random()* 6 - 3,y:Math.random()* 15}
+            this.speed = {x:Math.random()* 6 - 3,y:Math.random()* -15}
            
         }
         update(){
             //重力+速度一直往下掉
+            this.speed.y += this.gravity //重力+速度
+            this.location.y += this.speed.y 
             this.location.x -= this.speed.x
-            this.location.y += (this.gravity+this.speed.y) //重力+速度
+
             if(this.location.y > this.game.gameSize.height + this.size.height || this.location.x < 0 -this.size.width) this.deleted = true
-            if(this.location.y > this.game.gameSize.height - this.bounceBoundaries && this.bounceCount < 3) {
+            if(this.location.y > this.game.gameSize.height - this.bounceBoundaries && this.bounceCount < 5) {
                 this.bounceCount++
-                this.speed.y *= -0.5
+                this.speed.y *= -0.8
             }
-            
         }
         draw(context:CanvasRenderingContext2D){
             context.drawImage(this.img,this.imgXFrame*this.spriteSize,this.imgYFrame*this.spriteSize,this.spriteSize,this.spriteSize,
