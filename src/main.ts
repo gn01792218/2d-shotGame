@@ -22,6 +22,10 @@ interface Gravity {
     bounceCount:number,
     bounceBoundaries:number, //反彈的邊界
 }
+interface Rotation {
+    angle:number,
+    va:number,
+}
 enum KeyBoardCommands {
     UP = 'ArrowUp',
     DOWN = 'ArrowDown',
@@ -80,7 +84,7 @@ window.addEventListener('load',function(){
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
         protected size:Size = {width:120,height:150}
         protected location:Coordinate = {x:0,y:0}
-        protected speed:Speed = {x:5,y:5}
+        protected speed:Speed = {x:2,y:2}
         protected deleted:Boolean
         protected rect:Rectangle = {
             left:this.location.x,
@@ -129,12 +133,14 @@ window.addEventListener('load',function(){
             this.hp += payload
         }
     }
-    class Particle extends GameObj implements Gravity{
+    class Particle extends GameObj implements Gravity, Rotation{
         hp = 0
         atk = -0.1
         gravity = 0.5
         bounceCount = 0
         bounceBoundaries = 100
+        angle = 0
+        va = Math.random()*0.2 -0.1 
         //讓粒子可以調整大小
         private spriteSize = 50  //雪碧圖的原圖大小
         private sizeModifier = Number(((Math.random()*0.5+0.5).toFixed(1)))
@@ -146,15 +152,15 @@ window.addEventListener('load',function(){
             this.imgYFrame = Math.floor(Math.random()*3)
             this.size = {width:this.spriteSize*this.sizeModifier,height:this.spriteSize*this.sizeModifier}
             //讓粒子炸出時有擴散效果
-            this.speed = {x:Math.random()* 6 - 3,y:Math.random()* -15}
-           
+            this.speed = {x:Math.random()* 6 - 3, y:Math.random()* -15 }
         }
         update(){
+            //旋轉
+            this.angle += this.va
             //重力+速度一直往下掉
             this.speed.y += this.gravity //重力+速度
             this.location.y += this.speed.y 
             this.location.x -= this.speed.x
-
             if(this.location.y > this.game.gameSize.height + this.size.height || this.location.x < 0 -this.size.width) this.deleted = true
             if(this.location.y > this.game.gameSize.height - this.bounceBoundaries && this.bounceCount < 5) {
                 this.bounceCount++
@@ -162,8 +168,15 @@ window.addEventListener('load',function(){
             }
         }
         draw(context:CanvasRenderingContext2D){
+            context.save()
+            //將旋轉中心點設置為物體本身
+            context.translate(this.location.x,this.location.y)
+            //旋轉
+            context.rotate(this.angle)
+            //此時，drawImage的目標起點，要設置為(0,0)，因translate時已經將基準點改為本身座標，此時的0,0即代表本身座標
             context.drawImage(this.img,this.imgXFrame*this.spriteSize,this.imgYFrame*this.spriteSize,this.spriteSize,this.spriteSize,
-                this.location.x,this.location.y,this.size.width,this.size.height)
+                this.size.width*-0.5,this.size.height*-0.5,this.size.width,this.size.height)
+            context.restore()
         }
     }
     class Projectile extends GameObj {
@@ -189,7 +202,6 @@ window.addEventListener('load',function(){
             if(!this.deleted) {
                 context.save()
                 if(this.game.getDebug) context.strokeRect(this.location.x,this.location.y,this.size.width,this.size.height)
-                // context.fillStyle = 'transparent'
                 context.fillRect(this.location.x,this.location.y,this.size.width,this.size.height)
                 context.drawImage(this.img,this.location.x,this.location.y)
                 context.restore()
@@ -367,7 +379,7 @@ window.addEventListener('load',function(){
         constructor(game:Game){
             super(game)
             this.size = {width:228,height:169}
-            this.speed = {x:1.3,y:5}
+            this.speed = {x:1,y:1}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
             this.img = document.getElementById('angler') as HTMLImageElement
             this.imgXFrame = 0
@@ -382,7 +394,7 @@ window.addEventListener('load',function(){
         constructor(game:Game){
             super(game)
             this.size = {width:213,height:165}
-            this.speed = {x:1.5      ,y:5}
+            this.speed = {x:1, y:1}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
             this.img = document.getElementById('angler2') as HTMLImageElement
             this.imgXFrame = 0
@@ -397,7 +409,7 @@ window.addEventListener('load',function(){
         constructor(game:Game){
             super(game)
             this.size = {width:99,height:95}
-            this.speed = {x:2.2  ,y:5}
+            this.speed = {x:1.2,y:5}
             this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
             this.img = document.getElementById('lucky') as HTMLImageElement
             this.imgXFrame = 0
@@ -522,7 +534,7 @@ window.addEventListener('load',function(){
             this.gameTimeLimit = 100000
             this.winScore = 20
             this.gameEnd = false
-            this.gameSpeed = {x:1,y:1}
+            this.gameSpeed = {x:0.5,y:0.5}
             this.debug = true
             this.particleArr = []
         }
