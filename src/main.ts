@@ -81,6 +81,32 @@ window.addEventListener('load',function(){
             })
         }
     }
+    class Explosion {
+        protected img:HTMLImageElement 
+        protected imgXFrame:number //要畫playerImg的第幾張小圖之左上x
+        protected spriteHeight:number
+        protected ftp:number
+        protected timer:number
+        protected timerInterval:number   
+        protected deleted:Boolean
+        constructor(private game:Game,private location:Coordinate){
+            this.imgXFrame = 0
+            this.spriteHeight = 200
+            this.ftp = 15
+            this.timer = 0
+            this.timerInterval = 1000/this.ftp  //每秒幾次的意思
+            this.deleted = false
+        }
+        update(deltaTime?:number){
+            this.imgXFrame ++
+        }
+        draw(context:CanvasRenderingContext2D){
+            context.drawImage(this.img,this.location.x,this.location.y)
+        }
+    }
+    class SmokeExplosion extends Explosion {
+        
+    }
     abstract class GameObj {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
         protected size:Size = {width:120,height:150}
@@ -561,7 +587,7 @@ window.addEventListener('load',function(){
             this.player = new Player(this)
             this.inputHandler = new InputHandler(this)
             this.commandKeys = []
-            this.enemys = [new HiveWhale(this)]
+            this.enemys = []
             this.angularBornTimer = 0
             this.angularBornInterval = 1000
             this.gameTimer = 0
