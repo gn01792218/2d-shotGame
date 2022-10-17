@@ -38,6 +38,7 @@ enum KeyBoardCommands {
 enum EnemyType {
     NORMAL,
     LUCKY,
+    SPAWN,
 }
 //load事件時，渲染出遊戲場景
 window.addEventListener('load',function(){
@@ -103,6 +104,9 @@ window.addEventListener('load',function(){
         }
         get ATK () {
             return this.atk
+        }
+        get objSize () {
+            return this.size
         }
         get objRect () {
             return this.rect
@@ -416,6 +420,36 @@ window.addEventListener('load',function(){
             this.imgYFrame = Math.floor(Math.random()*2)
         }
     }
+    class HiveWhale extends Enemy {
+        killScroe = 5
+        hp = 5
+        atk = -5
+        type = EnemyType.SPAWN
+        constructor(game:Game){
+            super(game)
+            this.size = {width:400,height:227}
+            this.speed = {x:0.8,y:0.8}
+            this.location = {x:this.game.gameSize.width*0.8,y:Math.random()*(this.game.gameSize.height-this.size.height)}
+            this.img = document.getElementById('hivewhale') as HTMLImageElement
+            this.imgXFrame = 0
+            this.imgYFrame = 0
+        }
+    }
+    class Drone extends Enemy {
+        killScroe = 5
+        hp = 2
+        atk = -5
+        type = EnemyType.NORMAL
+        constructor(game:Game,location:Coordinate){
+            super(game)
+            this.size = {width:115,height:95}
+            this.speed = {x:2.5,y:2}
+            this.location = location
+            this.img = document.getElementById('drone') as HTMLImageElement
+            this.imgXFrame = 0
+            this.imgYFrame = Math.floor(Math.random()*2)
+        }
+    }
     class Layer {
         private size:Size = {width:1768,height:500}
         private location:Coordinate = {x:0,y:0}
@@ -527,7 +561,7 @@ window.addEventListener('load',function(){
             this.player = new Player(this)
             this.inputHandler = new InputHandler(this)
             this.commandKeys = []
-            this.enemys = []
+            this.enemys = [new HiveWhale(this)]
             this.angularBornTimer = 0
             this.angularBornInterval = 1000
             this.gameTimer = 0
@@ -602,6 +636,14 @@ window.addEventListener('load',function(){
                             this.player.addScore(enemy.gainScore)
                             //+乘效果
                             if(enemy.type === EnemyType.LUCKY)this.player.enterPowerUp()
+                            else if (enemy.type === EnemyType.SPAWN){
+                                for(let i = 0 ; i<5 ;i++) {
+                                    this.enemys.push(new Drone(this,{
+                                        x:enemy.objLocation.x+Math.random()*enemy.objSize.width,
+                                        y:enemy.objLocation.y+Math.random()*enemy.objSize.height
+                                    }))
+                                }   
+                            }
                         }
                     }
                 })
@@ -618,8 +660,8 @@ window.addEventListener('load',function(){
             this.bg.draw(context)
             this.player.draw(context)
             this.enemys.forEach(angular=>angular.draw(context))
-            this.particleArr.forEach(particle=>particle.draw(context ))
             this.ui.draw(context)
+            this.particleArr.forEach(particle=>particle.draw(context ))
             //讓layer4畫在最上面
             this.bg.getLayer4.draw(context)
         }
@@ -627,8 +669,9 @@ window.addEventListener('load',function(){
             let random = Math.random()
             if(this.player.playerScore >= this.winScore) return
             if(this.angularBornTimer > this.angularBornInterval) {
-                if(random < 0.8) this.enemys.push(new Angular(this))
-                else if(random <0.5) this.enemys.push(new Angular2(this))
+                if(random < 0.3)  this.enemys.push(new Angular(this))
+                else if(random <0.6 ) this.enemys.push(new Angular2(this))
+                else if(random < 0.8 ) this.enemys.push(new HiveWhale(this))
                 else this.enemys.push(new LuckyFish(this))
                 this.angularBornTimer = 0
             }
