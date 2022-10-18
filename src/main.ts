@@ -129,6 +129,12 @@ window.addEventListener('load',function(){
             this.img = document.getElementById('smokeExplosion') as HTMLImageElement
         }
     }
+    class FireExplosion extends Explosion {
+        constructor(game:Game,location:Coordinate){
+            super(game,location)
+            this.img = document.getElementById('fireExplosion') as HTMLImageElement
+        }
+    }
     abstract class GameObj {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
         protected size:Size = {width:120,height:150}
@@ -725,10 +731,17 @@ window.addEventListener('load',function(){
         }
         addExplosion(gameObj:GameObj) {
             let random = Math.random()
-            if(random < 1 ) this.explosions.push(new SmokeExplosion(this, {
-                x:gameObj.objLocation.x + gameObj.objSize.width * 0.5,
-                y:gameObj.objLocation.y + gameObj.objSize.height * 0.5
-            }))
+            if(random < 0.5 ){
+                this.explosions.push(new SmokeExplosion(this, {
+                    x:gameObj.objLocation.x + gameObj.objSize.width * 0.5,
+                    y:gameObj.objLocation.y + gameObj.objSize.height * 0.5
+                }))
+            } else {
+                this.explosions.push(new FireExplosion(this, {
+                    x:gameObj.objLocation.x + gameObj.objSize.width * 0.5,
+                    y:gameObj.objLocation.y + gameObj.objSize.height * 0.5
+                }))
+            }
         }
         autoGenrateAngular(deltaTime:number){
             let random = Math.random()
