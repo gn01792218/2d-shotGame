@@ -82,30 +82,52 @@ window.addEventListener('load',function(){
         }
     }
     class Explosion {
+        protected size:Size
         protected img:HTMLImageElement 
         protected imgXFrame:number //要畫playerImg的第幾張小圖之左上x
+        protected maxFrame:number
         protected spriteHeight:number
+        protected spriteWidth:number
         protected ftp:number
         protected timer:number
         protected timerInterval:number   
         protected deleted:Boolean
         constructor(private game:Game,private location:Coordinate){
+            this.spriteWidth = 200  //雪碧原圖寬
+            this.spriteHeight = 200  //雪碧原圖高
+            this.size = {width:this.spriteWidth, height:this.spriteHeight}
+            this.location = {
+                x:location.x - this.size.width * 0.5,
+                y:location.y - this.size.height *0.5 
+            }
             this.imgXFrame = 0
-            this.spriteHeight = 200
+            this.maxFrame = 8
             this.ftp = 15
             this.timer = 0
             this.timerInterval = 1000/this.ftp  //每秒幾次的意思
             this.deleted = false
+            
         }
-        update(deltaTime?:number){
-            this.imgXFrame ++
+        get disappear () {
+            return this.deleted
+        }
+        update(deltaTime:number){
+            if(this.timer > this.timerInterval) {
+                this.imgXFrame ++
+                this.timer = 0
+            }else this.timer += deltaTime
+            if(this.imgXFrame > this.maxFrame) this.deleted = true
         }
         draw(context:CanvasRenderingContext2D){
-            context.drawImage(this.img,this.location.x,this.location.y)
+            context.drawImage(this.img,this.imgXFrame * this.spriteWidth,0,this.spriteWidth,this.spriteHeight,
+                this.location.x,this.location.y,this.size.width,this.size.height)
         }
     }
     class SmokeExplosion extends Explosion {
-        
+        constructor(game:Game,location:Coordinate){
+            super(game,location)
+            this.img = document.getElementById('smokeExplosion') as HTMLImageElement
+        }
     }
     abstract class GameObj {
         //初始化傳入一個Game物件，以和main game產生連結，取得資訊、變更屬性
@@ -581,6 +603,7 @@ window.addEventListener('load',function(){
         private gameSpeed:Speed //控制遊戲中物件速度的基準
         private debug:Boolean
         private particleArr:Particle[]
+        private explosions : Explosion []
         constructor(private size:Size){
             this.bg = new Background(this)
             this.ui = new UI(this)
@@ -597,6 +620,7 @@ window.addEventListener('load',function(){
             this.gameSpeed = {x:0.5,y:0.5}
             this.debug = true
             this.particleArr = []
+            this.explosions = []
         }
         get getPlayer () {
             return this.player
@@ -657,7 +681,7 @@ window.addEventListener('load',function(){
                         ammo.disappear = true
                         enemy.tweakHp(ammo.ATK)
                         this.particleArr.push(new Particle(this,{x:enemy.objLocation.x,y:enemy.objLocation.y}))
-                        if(enemy.HP <= 0 ){
+                        if(enemy.HP <= 0 ){ //敵人死亡
                             //玩家加分數
                             this.player.addScore(enemy.gainScore)
                             //+乘效果
@@ -670,6 +694,8 @@ window.addEventListener('load',function(){
                                     }))
                                 }   
                             }
+                            //爆炸
+                            this.addExplosion(enemy)
                         }
                     }
                 })
@@ -681,15 +707,28 @@ window.addEventListener('load',function(){
                 particle.update()
             })
             this.particleArr = this.particleArr.filter(particle=>!particle.disappear)
+            //爆炸
+            this.explosions.forEach(explosion=>{
+                explosion.update(deltaTime)
+            })
+            this.explosions = this.explosions.filter(explosion=>!explosion.disappear)
         }
         draw(context:CanvasRenderingContext2D){
             this.bg.draw(context)
             this.player.draw(context)
             this.enemys.forEach(angular=>angular.draw(context))
+            this.explosions.forEach(explosion=>explosion.draw(context))
             this.ui.draw(context)
             this.particleArr.forEach(particle=>particle.draw(context ))
             //讓layer4畫在最上面
             this.bg.getLayer4.draw(context)
+        }
+        addExplosion(gameObj:GameObj) {
+            let random = Math.random()
+            if(random < 1 ) this.explosions.push(new SmokeExplosion(this, {
+                x:gameObj.objLocation.x + gameObj.objSize.width * 0.5,
+                y:gameObj.objLocation.y + gameObj.objSize.height * 0.5
+            }))
         }
         autoGenrateAngular(deltaTime:number){
             let random = Math.random()
