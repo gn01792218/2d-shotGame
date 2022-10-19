@@ -45,7 +45,7 @@ window.addEventListener('load',function(){
     //canvas setup 
     const canvas = this.document.getElementById('canvas1') as HTMLCanvasElement
     const ctx = canvas.getContext('2d')!;  //Drawing Context(built in object that allow us to deal with canvas)
-    canvas.width = 1500
+    canvas.width = 1000
     canvas.height = 500
     
     class InputHandler {
@@ -571,7 +571,7 @@ window.addEventListener('load',function(){
                 context.fillRect(20+i*6 ,20,5,20)
             }
             //計時器
-            context.fillText(`Timer:${this.game. gameTimeCount.toFixed(2)}`,20,100)
+            context.fillText(`Timer:${(this.game. gameTimeCount/1000).toFixed(1)}`,20,100)
             //輸贏顯示
             if(this.game.isGameEnd){
                 let msg1:string
@@ -618,9 +618,9 @@ window.addEventListener('load',function(){
             this.commandKeys = []
             this.enemys = []
             this.angularBornTimer = 0
-            this.angularBornInterval = 1000
+            this.angularBornInterval = 3000
             this.gameTimer = 0
-            this.gameTimeLimit = 100000
+            this.gameTimeLimit = 300000
             this.winScore = 20
             this.gameEnd = false
             this.gameSpeed = {x:0.5,y:0.5}
@@ -668,7 +668,7 @@ window.addEventListener('load',function(){
             this.player.update(deltaTime)
             this.enemys.forEach(enemy=>{
                 enemy.update(deltaTime)
-                if(this.player.checkCollisionWith(enemy.objRect)){
+                if(this.player.checkCollisionWith(enemy.objRect) && !this.gameEnd){
                     this.player.addScore(-1)
                 }
                 //檢測碰撞
@@ -707,7 +707,7 @@ window.addEventListener('load',function(){
                 })
             })
             this.enemys = this.enemys.filter(enemy=>!enemy.disappear)
-            this.autoGenrateAngular(deltaTime)
+            this.autoGenrateEnemy(deltaTime)
             //粒子update
             this.particleArr.forEach(particle=>{
                 particle.update()
@@ -743,7 +743,7 @@ window.addEventListener('load',function(){
                 }))
             }
         }
-        autoGenrateAngular(deltaTime:number){
+        autoGenrateEnemy(deltaTime:number){
             let random = Math.random()
             if(this.player.playerScore >= this.winScore) return
             if(this.angularBornTimer > this.angularBornInterval) {
